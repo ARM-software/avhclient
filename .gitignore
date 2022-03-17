@@ -1,0 +1,7 @@
+__pycache__
+*egg*
+.idea
+venv
+.coverage
+junit
+coverage.xml
