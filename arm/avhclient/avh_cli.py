@@ -17,7 +17,7 @@ from inspect import signature, Signature
 from itertools import islice
 from types import FunctionType, GenericAlias
 
-from arm.avhclient import AvhClient, AvhBackend
+from arm.avhclient import AvhClient, AvhBackend, __version__
 
 
 class AvhCli:
@@ -68,6 +68,8 @@ class AvhCli:
                             choices=AvhClient.get_available_backends(),
                             default='aws',
                             help=f'Select AVH backend to use. Default: {AvhClient.get_available_backends()[0]}')
+
+        parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
 
         return parser
 
