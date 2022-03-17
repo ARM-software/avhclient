@@ -123,7 +123,7 @@ class AwsBackend(AvhBackend):
 
     @property
     def keep_ec2_instance(self) -> bool:
-        """Amazon EC2 subnet id (AWS_KEEP_EC2_INSTANCES)."""
+        """Keep the EC2 instance running or terminate? (AWS_KEEP_EC2_INSTANCES)."""
         return self._keep_ec2_instance or (os.environ.get('AWS_KEEP_EC2_INSTANCES', 'false').lower() == 'true')
 
     @keep_ec2_instance.setter
