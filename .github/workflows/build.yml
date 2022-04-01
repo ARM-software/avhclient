@@ -5,18 +5,21 @@ on:
   pull_request:
     path:
       - '**/*.py'
+env:
+  PYTHON_VERSION: 3.9
 jobs:
   build:
     name: Build distribution
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Set up Python 3.8
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install setup dependencies
         run: |
           python -m pip install --upgrade pip
@@ -33,14 +36,15 @@ jobs:
   lint:
     name: Run PyLint checks
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Set up Python 3.8
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install dev dependencies
         run: |
           python -m pip install --upgrade pip
@@ -49,35 +53,41 @@ jobs:
         run: |
           echo "::add-matcher::.github/pylint.json"
           pylint --exit-zero --rcfile=./pylintrc arm/avhclient tests
+
   tests:
     name: Unit tests
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    env:
+      AWS_DEFAULT_REGION: eu-west-1
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
-        python-version: ['3.8', '3.9', '3.10']
+        python-version: ['3.9', '3.10']
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-# If we want to use TestSpace.org
-#      - uses: testspace-com/setup-testspace@v1
-#        with:
-#          domain: ARM-software
+      # - uses: testspace-com/setup-testspace@v1
+      #   with:
+      #     domain: ARM-software
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install dev dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
+
       - name: Run tests with coverage
         run: |
           coverage run --branch -m xmlrunner -o junit discover
           coverage xml --include="./arm/avhclient/**"
+
       - name: Publish test results
         uses: mikepenz/action-junit-report@v2
         with:
@@ -85,20 +95,18 @@ jobs:
           report_paths: junit/*.xml
         if: ${{ always() }}
 
-# If we want to use CodeCov:
-#      - uses: codecov/codecov-action@v2
-#        with:
-#          token: ${{ secrets.CODECOV_TOKEN }}
-#          files: ./coverage.xml
-#          flags: unittests,${{ matrix.os }},python-${{ matrix.python-version }}
-#          name: cov-${{ matrix.os }}-${{ matrix.python-version }}
-#          fail_ci_if_error: true
-#          verbose: true
-#        if: ${{ always() }}
+      # - uses: codecov/codecov-action@v2
+      #   if: ${{ always() }}
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: ./coverage.xml
+      #     flags: unittests,${{ matrix.os }},python-${{ matrix.python-version }}
+      #     name: cov-${{ matrix.os }}-${{ matrix.python-version }}
+      #     fail_ci_if_error: true
+      #     verbose: true
 
-# If we want to use Testspace
-#      - name: Push result to Testspace server
-#        run: |
-#          testspace "[${{ matrix.os }}-${{ matrix.python-version }}]junit/*.xml"
-#          testspace "[${{ matrix.os }}-${{ matrix.python-version }}]coverage.xml"
-#        if: always()
+      # - name: Push result to Testspace server
+      #   if: always()
+      #   run: |
+      #     testspace "[${{ matrix.os }}-${{ matrix.python-version }}]junit/*.xml"
+      #     testspace "[${{ matrix.os }}-${{ matrix.python-version }}]coverage.xml"

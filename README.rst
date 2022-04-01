@@ -85,8 +85,6 @@ In order to avhclient is needed to expose some AWS resources for the tools.
 
     In case `AWS_AMI_VERSION` is not set, the avhclient will the latest AVH AMI available.
 
-    More info `AWS CLI config and credentials <https://arm-software.github.io/VHT/main/infrastructure/html/run_ami_github.html#github_hosted1>`_.
-
     In addition, a `Cloudformation` code can be used to create the AVH dependencies for
     your account `here <https://github.com/ARM-software/VHT-GetStarted/tree/main/infrastructure/cloudformation>`_
 
