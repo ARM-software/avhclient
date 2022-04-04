@@ -215,6 +215,7 @@ class AwsBackend(AvhBackend):
         """
         self._check_env('AWS_ACCESS_KEY_ID')
         self._check_env('AWS_SECRET_ACCESS_KEY')
+        self._check_env('AWS_DEFAULT_REGION')
         if not self._check_env('AWS_SESSION_TOKEN'):
             logging.debug('aws:It is expected for an IAM User')
 

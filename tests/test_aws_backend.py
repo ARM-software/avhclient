@@ -7,6 +7,7 @@
 
 import datetime
 import os
+import unittest
 
 from dateutil.tz import tzutc, tzlocal
 from unittest import TestCase, skip
@@ -40,9 +41,9 @@ class TestAwsBackend(TestCase):
         # mandatory data
         # optional data
 
-    def tearDown(self) -> None:
-        for k in filter(lambda v: v.startswith("AWS_"), os.environ.keys()):
-            del os.environ[k]
+    # def tearDown(self) -> None:
+    #     for k in filter(lambda v: v.startswith("AWS_"), os.environ.keys()):
+    #         del os.environ[k]
 
     def get_avh_aws_instance(self):
         self.set_mandatory_env_vars()
@@ -52,7 +53,7 @@ class TestAwsBackend(TestCase):
         self.set_instance_id_env()
         self.set_s3_keyprefix_env()
         self.set_key_name_env()
-        with patch.object(AwsBackend, '_is_aws_credentials_present', return_value=True):
+        with patch.object(AwsBackend, '_setup', return_value=True):
             aws_client = AwsBackend()
             aws_client._init()
         return aws_client
@@ -106,68 +107,67 @@ class TestAwsBackend(TestCase):
         del os.environ["AWS_S3_KEYPREFIX"]
 
     def test_avh_aws_setup(self):
-        with patch.object(AwsBackend, '_is_aws_credentials_present', return_value=True):
-            self.set_mandatory_env_vars()
-            self.set_create_instance_env_vars()
+        self.set_mandatory_env_vars()
+        self.set_create_instance_env_vars()
 
-            # test with ami_id
-            self.set_ami_id_env()
-            aws_client = AwsBackend()
-            aws_client._init()
+        # test with ami_id
+        self.set_ami_id_env()
+        aws_client = AwsBackend()
+        aws_client._init()
 
-            # test with key_name
-            self.set_key_name_env()
-            aws_client = AwsBackend()
-            aws_client._init()
-            self.assertEqual(self.data['AWS_KEY_NAME'], aws_client.key_name)
-            self.del_key_name_env()
+        # test with key_name
+        self.set_key_name_env()
+        aws_client = AwsBackend()
+        aws_client._init()
+        self.assertEqual(self.data['AWS_KEY_NAME'], aws_client.key_name)
+        self.del_key_name_env()
 
-            # test mandatory env vars
-            aws_client = AwsBackend()
-            aws_client._init()
-            self.assertEqual(self.data['AWS_INSTANCE_TYPE'], aws_client.instance_type)
-            self.assertEqual(self.data['AWS_IAM_PROFILE'], aws_client.iam_profile)
-            self.assertEqual(self.data['AWS_S3_BUCKET_NAME'], aws_client.s3_bucket_name)
-            self.assertEqual(self.data['AWS_SECURITY_GROUP_ID'], aws_client.security_group_id)
-            self.assertEqual(self.data['AWS_SUBNET_ID'], aws_client.subnet_id)
-            self.assertEqual(self.data['AWS_KEEP_EC2_INSTANCES'], aws_client.keep_ec2_instance)
+        # test mandatory env vars
+        aws_client = AwsBackend()
+        aws_client._init()
+        self.assertEqual(self.data['AWS_INSTANCE_TYPE'], aws_client.instance_type)
+        self.assertEqual(self.data['AWS_IAM_PROFILE'], aws_client.iam_profile)
+        self.assertEqual(self.data['AWS_S3_BUCKET_NAME'], aws_client.s3_bucket_name)
+        self.assertEqual(self.data['AWS_SECURITY_GROUP_ID'], aws_client.security_group_id)
+        self.assertEqual(self.data['AWS_SUBNET_ID'], aws_client.subnet_id)
+        self.assertEqual(self.data['AWS_KEEP_EC2_INSTANCES'], aws_client.keep_ec2_instance)
 
-            self.assertEqual(self.data['AWS_AMI_ID'], aws_client.ami_id)
+        self.assertEqual(self.data['AWS_AMI_ID'], aws_client.ami_id)
 
-            # Negative test
-            self.assertFalse(aws_client.instance_id)
-            self.assertEqual(self.data['AWS_S3_KEYPREFIX'], aws_client.s3_keyprefix)
-            self.assertFalse(aws_client.key_name)
+        # Negative test
+        self.assertFalse(aws_client.instance_id)
+        self.assertEqual(self.data['AWS_S3_KEYPREFIX'], aws_client.s3_keyprefix)
+        self.assertFalse(aws_client.key_name)
 
-            # test with ami_id && ami_version
-            self.set_ami_version_env()
+        # test with ami_id && ami_version
+        self.set_ami_version_env()
+        aws_client = AwsBackend()
+        aws_client._init()
+        self.assertEqual(self.data['AWS_AMI_ID'], aws_client.ami_id)
+        self.assertEqual(self.data['AWS_AMI_VERSION'], aws_client.ami_version)
+
+        # test with ami_version()
+        with patch.object(AwsBackend, 'get_image_id', return_value=self.data['AWS_AMI_ID']):
             aws_client = AwsBackend()
             aws_client._init()
             self.assertEqual(self.data['AWS_AMI_ID'], aws_client.ami_id)
             self.assertEqual(self.data['AWS_AMI_VERSION'], aws_client.ami_version)
+            self.del_ami_version_env()
+            self.del_ami_id_env()
 
-            # test with ami_version()
-            with patch.object(AwsBackend, 'get_image_id', return_value=self.data['AWS_AMI_ID']):
-                aws_client = AwsBackend()
-                aws_client._init()
-                self.assertEqual(self.data['AWS_AMI_ID'], aws_client.ami_id)
-                self.assertEqual(self.data['AWS_AMI_VERSION'], aws_client.ami_version)
-                self.del_ami_version_env()
-                self.del_ami_id_env()
+        # test with instance id
+        self.del_create_instance_env_vars()
+        self.set_instance_id_env()
+        aws_client = AwsBackend()
+        aws_client._init()
+        self.assertEqual(self.data['AWS_INSTANCE_ID'], aws_client.instance_id)
+        self.assertFalse(aws_client.ami_id)
 
-            # test with instance id
-            self.del_create_instance_env_vars()
-            self.set_instance_id_env()
-            aws_client = AwsBackend()
-            aws_client._init()
-            self.assertEqual(self.data['AWS_INSTANCE_ID'], aws_client.instance_id)
-            self.assertFalse(aws_client.ami_id)
-
-            # test with s3_keyprefix
-            self.set_s3_keyprefix_env()
-            aws_client = AwsBackend()
-            aws_client._init()
-            self.assertEqual(self.data['AWS_S3_KEYPREFIX'], aws_client.s3_keyprefix)
+        # test with s3_keyprefix
+        self.set_s3_keyprefix_env()
+        aws_client = AwsBackend()
+        aws_client._init()
+        self.assertEqual(self.data['AWS_S3_KEYPREFIX'], aws_client.s3_keyprefix)
 
     def test_create_instance(self):
         aws_client = self.get_avh_aws_instance()

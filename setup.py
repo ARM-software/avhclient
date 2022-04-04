@@ -47,7 +47,7 @@ setup(
     entry_points={
         'console_scripts': ['avhclient=arm.avhclient.avh_cli:AvhCli']
     },
-    python_requires='>=3.8',
+    python_requires='>=3.9',
     url='',
     license='',
     author='Samuel Pelegrinello Caipers, Jonatan Antoni',
