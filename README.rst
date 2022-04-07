@@ -24,7 +24,7 @@
     :alt: PyPI - License
 
 Arm Virtual Hardware Client (avhclient)
-===========================
+=======================================
 
 The **Arm Virtual Hardware Client** (avhclient) is a python module that provides an interface for deploying and using  `Arm Virtual Hardware (AVH) <https://www.arm.com/products/development-tools/simulation/virtual-hardware>`_.
 
@@ -116,7 +116,7 @@ In order for avhclient to create or access an AVH instance following parameters 
     export AWS_INSTANCE_ID=YOUR_INSTANCE
 
 Local Backend Setup
-#################
+###################
 
 Operation with a local backend requires no specific environment parameters, but assumes that necessary toolchain, AVH targets and utilities are installed locally on the machine and configured for execution in command line.
 
@@ -126,7 +126,7 @@ Usage
 -----
 
 Getting Help 
-##############
+############
 
 To get the brief descriptions of all commands and options available with avhclient execute::
 
