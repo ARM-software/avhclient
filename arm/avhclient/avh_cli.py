@@ -17,11 +17,7 @@ from inspect import signature, Signature
 from itertools import islice
 from types import FunctionType
 
-if sys.version_info >= (3, 9):
-    from types import GenericAlias
-else:
-    from typing import Generic
-    GenericAlias = Generic
+from typing import _GenericAlias as GenericAlias
 
 from arm.avhclient import AvhClient, AvhBackend, __version__
 
@@ -87,7 +83,8 @@ class AvhCli:
         if argtype is bool:
             kwargs['action'] = 'store_true'
         elif isinstance(argtype, GenericAlias):
-            if isinstance(argtype(), list):
+            if argtype.__origin__ is list:
+                kwargs['type'] = argtype.__args__[0] if len(argtype.__args__) > 0 else str
                 kwargs['nargs'] = '+' if default is None else '*'
         elif issubclass(argtype, Enum):
             kwargs['choices'] = list(filter(lambda v: v.value, argtype))
@@ -130,7 +127,8 @@ class AvhCli:
                 subparser = subparsers.add_parser(name.replace('_', '-'), help=func_help)
                 params = signature(member).parameters
                 for param in islice(params.items(), 1, None):
-                    param_help = re.search(f"{param[0]}: (.*)", member.__doc__).group(1) if member.__doc__ else ""
+                    param_help = re.search(f"{param[0]}: (.*)", member.__doc__) if member.__doc__ else None
+                    param_help = param_help.group(1) if param_help else ""
                     param_type = param[1].annotation if param[1].annotation != Signature.empty else str
                     param_default = param[1].default if param[1].default != Signature.empty else None
                     AvhCli._add_argument(subparser, param[0], param_type, param_default, param_help)
