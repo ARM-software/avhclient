@@ -15,12 +15,20 @@ from enum import Enum
 from gettext import gettext as _
 from inspect import signature, Signature
 from itertools import islice
-from types import FunctionType, GenericAlias
+from types import FunctionType
+
+if sys.version_info >= (3, 9):
+    from types import GenericAlias
+else:
+    from typing import Generic
+    GenericAlias = Generic
 
 from arm.avhclient import AvhClient, AvhBackend, __version__
 
 
 class AvhCli:
+    """Arm Virtual Hardware Command Line Interface"""
+
     def __init__(self):
         parser = self._parser()
 
@@ -45,7 +53,7 @@ class AvhCli:
         try:
             func(avh_client, *func_args)
         except RuntimeError as e:
-            if e.__cause__:
+            if e.__cause__ is not None:
                 logging.error(e.__cause__.__doc__)
                 logging.error(e.__cause__)
             if str(e):
@@ -96,18 +104,18 @@ class AvhCli:
     @staticmethod
     def _add_backend_args(parser: ArgumentParser, backend: AvhBackend):
         group = parser.add_argument_group(f"{backend.name()} backend properties")
-        for k, v in filter(lambda m: not m[0].startswith('_') and isinstance(m[1], property),
+        for key, value in filter(lambda m: not m[0].startswith('_') and isinstance(m[1], property),
                            backend.__class__.__dict__.items()):
-            sig = inspect.signature(v.fget)
-            AvhCli._add_argument(group, k, sig.return_annotation, getattr(backend, k), v.__doc__)
+            sig = inspect.signature(value.fget)
+            AvhCli._add_argument(group, key, sig.return_annotation, getattr(backend, key), value.__doc__)
 
     @staticmethod
     def _consume_backend_args(backend: AvhBackend, args: Namespace):
         args = vars(args)
-        for k, v in filter(lambda m: not m[0].startswith('_') and isinstance(m[1], property),
+        for key, _ in filter(lambda m: not m[0].startswith('_') and isinstance(m[1], property),
                            backend.__class__.__dict__.items()):
-            if k in args:
-                setattr(backend, k, args[k])
+            if key in args:
+                setattr(backend, key, args[key])
 
     @staticmethod
     def _add_commands(parser: ArgumentParser):
@@ -116,13 +124,13 @@ class AvhCli:
 
         subparsers = parser.add_subparsers(dest='subcmd', required=True, help='sub-command help')
 
-        for m, n in AvhClient.__dict__.items():
-            if isinstance(n, FunctionType) and not m.startswith('_'):
-                func_help = n.__doc__.split('\n')[0] if n.__doc__ else ''
-                subparser = subparsers.add_parser(m.replace('_', '-'), help=func_help)
-                params = signature(n).parameters
+        for name, member in AvhClient.__dict__.items():
+            if isinstance(member, FunctionType) and not name.startswith('_'):
+                func_help = member.__doc__.split('\n')[0] if member.__doc__ else ''
+                subparser = subparsers.add_parser(name.replace('_', '-'), help=func_help)
+                params = signature(member).parameters
                 for param in islice(params.items(), 1, None):
-                    param_help = re.search(f"{param[0]}: (.*)", n.__doc__).group(1) if n.__doc__ else ""
+                    param_help = re.search(f"{param[0]}: (.*)", member.__doc__).group(1) if member.__doc__ else ""
                     param_type = param[1].annotation if param[1].annotation != Signature.empty else str
                     param_default = param[1].default if param[1].default != Signature.empty else None
                     AvhCli._add_argument(subparser, param[0], param_type, param_default, param_help)

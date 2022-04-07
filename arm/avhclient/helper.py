@@ -36,7 +36,7 @@ def _iglob(pathname: Union[str, Path], root_dir: Union[str, Path] = Path.cwd(),
 
 def create_archive(filename: Union[str, Path],
                    root_dir: Union[str, Path] = Path.cwd(),
-                   globs: List[str] = ["**/*"],
+                   globs: List[str] = None,
                    verbose: bool = False):
     """Create an bzip2-compressed tarball of the given directory.
 
@@ -48,9 +48,12 @@ def create_archive(filename: Union[str, Path],
         filename: The filename of the resulting archive.
         root_dir: The root directory for the archive, defaults to current working directory.
         globs: A list of glob filters with includes and excludes, defaults to **/*.
+        verbose: List archive content if set to True.
     """
     if not isinstance(root_dir, Path):
         root_dir = Path(root_dir)
+    if not globs:
+        globs = ["**/*"]
 
     with tarfile.open(filename, mode='w:bz2') as archive:
         files = set()

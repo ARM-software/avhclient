@@ -13,7 +13,6 @@ from pathlib import Path
 from shutil import rmtree
 
 from tempfile import TemporaryDirectory, NamedTemporaryFile, gettempdir
-from time import sleep
 from typing import List, Union
 
 from .avh_backend import AvhBackend, AvhBackendState
@@ -21,13 +20,16 @@ from .helper import create_archive
 
 
 class LocalBackend(AvhBackend):
+    """AVH Backend implementation running all action on the local machine."""
 
     @staticmethod
     def name() -> str:
+        """Returns the name identifying this backend."""
         return "local"
 
     @staticmethod
     def priority() -> int:
+        """Returns the priority to order the list of backends."""
         return 50
 
     @property
@@ -66,24 +68,24 @@ class LocalBackend(AvhBackend):
         if state == AvhBackendState.CREATED:
             rmtree(self.workdir, ignore_errors=True)
 
-    def upload_workspace(self, tarball: Union[str, Path]):
+    def upload_workspace(self, filename: Union[str, Path]):
         logging.info("Extracting workspace into %s", self.workdir)
-        with tarfile.open(tarball, mode='r:bz2') as archive:
+        with tarfile.open(filename, mode='r:bz2') as archive:
             archive.extractall(path=self.workdir)
 
     def run_commands(self, cmds: List[str]):
         shfile = NamedTemporaryFile(prefix="script-", suffix=".sh", dir=self.workdir, delete=False)
         shfile.close()
-        with open(shfile.name, mode="w", encoding='UTF-8', newline='\n') as f:
-            f.write("#!/bin/bash\n")
-            f.write("set +x\n")
-            f.write("\n".join(cmds))
-            f.write("\n")
+        with open(shfile.name, mode="w", encoding='UTF-8', newline='\n') as file:
+            file.write("#!/bin/bash\n")
+            file.write("set +x\n")
+            file.write("\n".join(cmds))
+            file.write("\n")
 
-        subprocess.run(["bash", shfile.name], shell=True, cwd=self.workdir)
+        subprocess.run(["bash", shfile.name], check=False, shell=True, cwd=self.workdir)
 
         os.remove(shfile.name)
 
-    def download_workspace(self, tarball: Union[str, Path], globs: List[str] = ['**/*']):
+    def download_workspace(self, filename: Union[str, Path], globs: List[str] = None):
         logging.info("Archiving workspace from %s", self.workdir)
-        create_archive(tarball, self.workdir, globs)
+        create_archive(filename, self.workdir, globs)

@@ -13,6 +13,7 @@ from typing import Dict, Type, List, Union
 
 
 class AvhBackendState(Enum):
+    """Possible AWS EC2 instance states."""
     INVALID = None
     CREATED = 'created'
     STARTED = 'started'
@@ -23,8 +24,15 @@ class AvhBackendState(Enum):
 
 
 class AvhBackend:
+    """Backend interface"""
+
     @staticmethod
     def find_implementations() -> Dict[str, Type[AvhBackend]]:
+        """Find all available backend implementations.
+
+        Returns:
+            Mapping with backend names and classes.
+        """
         return {cls.name(): cls for cls in AvhBackend.__subclasses__()}
 
     @staticmethod
@@ -64,19 +72,19 @@ class AvhBackend:
         """
         raise NotImplementedError()
 
-    def upload_workspace(self, tarball: Union[str, Path]):
+    def upload_workspace(self, filename: Union[str, Path]):
         """Upload the workspace content from the given tarball.
 
         Params:
-            tarball - The archived workspace.
+            filename - The archived workspace.
         """
         raise NotImplementedError()
 
-    def download_workspace(self, tarball: Union[str, Path], globs: List[str] = ['**/*']):
+    def download_workspace(self, filename: Union[str, Path], globs: List[str] = None):
         """Download the workspace content into given tarball.
 
         Params:
-            tarball - The archived workspace.
+            filename - The archived workspace.
         """
         raise NotImplementedError()
 
@@ -87,4 +95,3 @@ class AvhBackend:
             cmds - List of command strings
         """
         raise NotImplementedError()
-

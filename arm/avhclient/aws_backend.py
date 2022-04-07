@@ -5,22 +5,37 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-import boto3
 import logging
 import os
 import time
 
-from botocore.exceptions import ClientError
-from botocore.exceptions import WaiterError
 from pathlib import Path
-from semantic_version import Version, SimpleSpec
 from tempfile import NamedTemporaryFile
 from typing import List, Union
+
+import boto3
+
+from botocore.exceptions import ClientError
+from botocore.exceptions import WaiterError
+from semantic_version import Version, SimpleSpec
 
 from .avh_backend import AvhBackend, AvhBackendState
 
 
 class AwsBackend(AvhBackend):
+    """
+       AVH AWS Backend
+
+       This backend runs in your Amazon account:
+        * Creates/starts/setup a [new] AVH EC2 instance.
+        * Run AVH-related commands.
+        * Get the outputs
+        * Terminates/Stops the AVH EC2 instance.
+
+       The AWS credentials key is expected as envs. See _is_aws_credentials_present method.
+       Some AWS-related info is expected as envs. See _setup.
+   """
+
     AMI_WORKDIR = '/home/ubuntu'
 
     @staticmethod
@@ -139,18 +154,6 @@ class AwsBackend(AvhBackend):
     def s3_keyprefix(self, value: bool):
         self._s3_keyprefix = value
 
-    """
-    AVH AWS Backend
-
-    This backend runs in your Amazon account:
-     * Creates/starts/setup a [new] AVH EC2 instance.
-     * Run AVH-related commands.
-     * Get the outputs
-     * Terminates/Stops the AVH EC2 instance.
-
-    The AWS credentials key is expected as envs. See _is_aws_credentials_present method.
-    Some AWS-related info is expected as envs. See _setup.
-    """
     def __init__(self):
         self._ami_id = None
         self._ami_version = None
@@ -259,6 +262,15 @@ class AwsBackend(AvhBackend):
         logging.info(f"aws:aws__repr__:{self.__repr__()}")
 
     def find_instance_by_name(self, name: str) -> Union[str, None]:
+        """Find an instance by name attribute.
+        The result is None if more than one instance with the given name exists.
+
+        Params:
+            name - The name of a machine instance to lookup.
+
+        Returns:
+            The machine id or None
+        """
         instance_id = None
         name_filter = [
             {'Name': 'tag:Name', 'Values': [name]},
@@ -438,9 +450,7 @@ class AwsBackend(AvhBackend):
                 Filters=[
                     {
                         'Name': 'name',
-                        'Values': [
-                            f"ArmVirtualHardware-*"
-                        ]
+                        'Values': ["ArmVirtualHardware-*"]
                     },
                 ]
             )
@@ -450,18 +460,19 @@ class AwsBackend(AvhBackend):
         logging.debug("aws:get_vht_ami_id_by_version:%s", response)
 
         version_spec = SimpleSpec(self.ami_version)
-        images = dict()
+        images = {}
         for image in response['Images']:
             ver = image['Name'].split('-')[1]
             try:
                 images[Version(ver)] = image['ImageId']
-            except ValueError as e:
+            except ValueError:
                 logging.debug("aws:get_vht_ami_id_by_version:Invalid version identifier found: %s", ver)
         versions = sorted(version_spec.filter(images.keys()), reverse=True)
 
         if not versions:
             logging.error("aws:get_vht_ami_id_by_version:No AMI found matching version spec %s", self.ami_version)
-            logging.error("aws:get_vht_ami_id_by_version:Available AMI versions %s", sorted([str(v) for v in images.keys()], reverse=True))
+            logging.error("aws:get_vht_ami_id_by_version:Available AMI versions %s",
+                          sorted([str(k) for k, v in images], reverse=True))
             raise RuntimeError()
 
         logging.info("aws:get_vht_ami_id_by_version:Selecting AMI version %s", versions[0])
@@ -523,7 +534,7 @@ class AwsBackend(AvhBackend):
         try:
             content = self._s3_resource.Object(self.s3_bucket_name, key).get()['Body'].read().decode('utf-8')
         except self._s3_client.exceptions.NoSuchKey:
-            logging.error(f"aws:Key '%s' not found on S3 bucket '%s'", key, self.s3_bucket_name)
+            logging.error("aws:Key '%s' not found on S3 bucket '%s'", key, self.s3_bucket_name)
         return content
 
     def get_s3_ssm_command_id_key(self, command_id, output_type):
@@ -668,18 +679,22 @@ class AwsBackend(AvhBackend):
         return response['CommandInvocations'][0]['StandardErrorUrl']
 
     def create_or_start_instance(self) -> AvhBackendState:
+        """Create a new or start an existing machine instance
+
+        Returns:
+            The machine instance state.
+        """
         self._init()
         if self.instance_id:
             state = self.get_instance_state()
             if state == "running":
                 logging.info(f"aws:EC2 Instance {self.instance_id} already running!")
                 return AvhBackendState.RUNNING
-            elif state == "stopped":
+            if state == "stopped":
                 logging.info(f"aws:EC2 Instance {self.instance_id} provided!")
                 self.start_instance()
                 return AvhBackendState.STARTED
-            else:
-                logging.warning(f"aws:EC2 Instance {self.instance_id} cannot be reused from state '{state}'!")
+            logging.warning(f"aws:EC2 Instance {self.instance_id} cannot be reused from state '{state}'!")
 
         self.create_instance()
         return AvhBackendState.CREATED
@@ -708,11 +723,11 @@ class AwsBackend(AvhBackend):
 
         shfile = Path(NamedTemporaryFile(prefix="script-", suffix=".sh", delete=False).name)
         try:
-            with open(shfile, mode="w", encoding='UTF-8', newline='\n') as f:
-                f.write("#!/bin/bash\n")
-                f.write("set +x\n")
-                f.write("\n".join(cmds))
-                f.write("\n")
+            with open(shfile, mode="w", encoding='UTF-8', newline='\n') as file:
+                file.write("#!/bin/bash\n")
+                file.write("set +x\n")
+                file.write("\n".join(cmds))
+                file.write("\n")
 
             self.upload_file_to_cloud(str(shfile), shfile.name)
 
@@ -742,7 +757,9 @@ class AwsBackend(AvhBackend):
         finally:
             self.delete_file_from_cloud(filename.name)
 
-    def download_workspace(self, filename: Union[str, Path], globs: List[str] = ['**/*']):
+    def download_workspace(self, filename: Union[str, Path], globs: List[str] = None):
+        if not globs:
+            globs = ['**/*']
         self._init()
         if isinstance(filename, str):
             filename = Path(filename)
@@ -783,7 +800,7 @@ class AwsBackend(AvhBackend):
         logging.info(f"aws:Upload File {filename} to S3 Bucket {self.s3_bucket_name}, Key {key}")
         self._s3_resource.meta.client.upload_file(filename, self.s3_bucket_name, key)
 
-    def send_remote_command(self, command_list, working_dir, fail_if_unsuccess = True):
+    def send_remote_command(self, command_list, working_dir, fail_if_unsuccess=True):
         """
         Send a remote command to an EC2 Instance.
 
@@ -817,7 +834,7 @@ class AwsBackend(AvhBackend):
 
         return response
 
-    def send_remote_command_batch(self, command_list, working_dir, fail_if_unsuccess = True):
+    def send_remote_command_batch(self, command_list, working_dir, fail_if_unsuccess=True):
         """
         Send batch of remote commands to an EC2 Instance.
 
@@ -889,13 +906,6 @@ class AwsBackend(AvhBackend):
             https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-plugins.html#aws-runShellScript
         """
 
-        command_id = ''
-        command_id_status = ''
-        stdout_key = ''
-        stdout_str = ''
-        stderr_key = ''
-        stderr_str = ''
-
         logging.info(f"aws:send_ssm_shell_command:{working_dir}:{command_list}")
 
         try:
@@ -935,6 +945,7 @@ class AwsBackend(AvhBackend):
 
         stdout_key = self.get_s3_ssm_command_id_key(command_id, 'stdout')
         stdout_str = self.get_s3_file_content(stdout_key)
+        stderr_str = ''
 
         if command_id_status != 'Success':
             stderr_key = self.get_s3_ssm_command_id_key(command_id, 'stderr')
@@ -942,16 +953,15 @@ class AwsBackend(AvhBackend):
 
         if return_type == 'all':
             return {
-                'CommandId' : command_id,
-                'CommandIdStatus' : command_id_status,
-                'CommandList' : command_list,
-                'StdOut' : stdout_str,
+                'CommandId': command_id,
+                'CommandIdStatus': command_id_status,
+                'CommandList': command_list,
+                'StdOut': stdout_str,
                 'StdErr': stderr_str
             }
-        elif return_type == 'command_id':
+        if return_type == 'command_id':
             return command_id
-        else:
-            raise AttributeError(f"Output type '{return_type}' invalid. See docs.")
+        raise AttributeError(f"Output type '{return_type}' invalid. See docs.")
 
     def start_instance(self):
         """
@@ -1109,7 +1119,7 @@ class AwsBackend(AvhBackend):
 
     def cleanup(self, state):
         self._init()
-        if (state == AvhBackendState.RUNNING) or (state == AvhBackendState.INVALID):
+        if state in (AvhBackendState.RUNNING, AvhBackendState.INVALID):
             pass
         elif (state == AvhBackendState.STARTED) or self.keep_ec2_instance:
             self.stop_instance()

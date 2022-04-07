@@ -3,10 +3,10 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    path:
+    paths:
       - '**/*.py'
 env:
-  PYTHON_VERSION: 3.9
+  PYTHON_VERSION: 3.8
 jobs:
   build:
     name: Build distribution
@@ -63,7 +63,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
-        python-version: ['3.9', '3.10']
+        python-version: ['3.8', '3.9', '3.10']
     steps:
       - uses: actions/checkout@v3
         with:
