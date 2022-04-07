@@ -1,18 +1,6 @@
 |build-badge| |test-badge| |cov-badge| |python-badge|
 |wheel-badge| |pypi-badge| |license-badge|
 
-Arm Virtual Hardware Client
-===========================
-
-Installation
-------------
-
-Installing (development snapshot) directly from GitHub `main` branch::
-
-    pip install git+https://github.com/ARM-software/avhclient.git@main
-
-Copyright (C) 2022, Arm Ltd.
-
 .. |build-badge| image:: https://img.shields.io/github/workflow/status/ARM-software/avhclient/Build/main?style=flat
     :target: https://github.com/ARM-software/avhclient/actions/workflows/build.yml?query=event%3Apush+branch%3Amain+is%3Acompleted
     :alt: GitHub main-branch Build Workflow Status
@@ -35,14 +23,50 @@ Copyright (C) 2022, Arm Ltd.
     :target: https://pypi.org/project/arm-avhclient/
     :alt: PyPI - License
 
+Arm Virtual Hardware Client (avhclient)
+===========================
+
+The **Arm Virtual Hardware Client** (avhclient) is a python module that provides an interface for deploying and using  `Arm Virtual Hardware (AVH) <https://www.arm.com/products/development-tools/simulation/virtual-hardware>`_.
+
+It enables uniform implementation of CI operations in various environments with reference examples provided for the following use cases:
+
+* Jenkins CI pipelines
+* GitHub-Actions workflows
+* Local use with AVH targets
+
+Other environments can be supported using demonstrated concepts as well.
+
+**Example projects using AVH Client**
+
+* `VHT-GetStarted <https://github.com/ARM-software/VHT-GetStarted>`_
+* `CMSIS-RTOS2-Validation <https://github.com/ARM-software/CMSIS-RTOS2_Validation>`_
+
+****
+
+Installation
+------------
+
+Installing (development snapshot) directly from GitHub `main` branch::
+
+    pip install git+https://github.com/ARM-software/avhclient.git@main
+
 ****
 
 Backend Setup
 -------------
+avhclient can control different backends with Arm Virtual Hardware. Following options are currently available:
+
+* ``aws`` (default) - interacts with AVH AMI available through `AWS Marketplace <https://arm-software.github.io/VHT/main/infrastructure/html/index.html#AWS>`_
+* ``local`` - operates with AVH Targets installed locally.
+
+The backend can be specified with ``-b`` option preceding the actual avhclient command.
+
+Depending on the backend certain environment setup is expected.
 
 AWS Backend Setup
 #################
-The AWS backend is built on top of `boto3` AWS SDK.
+
+avhclient accesses AWS services via `Boto3 AWS SDK <https://github.com/boto/boto3>`_ and for that requires a set of parameters to be available in the environment.
 
 AWS Credentials
 ***************
@@ -64,9 +88,9 @@ More info `AWS CLI config and credentials <https://docs.aws.amazon.com/cli/lates
 
 AWS Account info
 ****************
-In order to avhclient is needed to expose some AWS resources for the tools.
+In order for avhclient to create or access an AVH instance following parameters need to be defined in the execution environment of avhclient:
 
-* For a **new AVH instance**:
+* When creating and running a **new AVH instance**:
     Mandatory info::
 
         export AWS_IAM_PROFILE='YOUR_IAM_PROFILE'
@@ -83,33 +107,37 @@ In order to avhclient is needed to expose some AWS resources for the tools.
         export AWS_INSTANCE_TYPE=t2.micro
         export AWS_INSTANCE_NAME=MY_AVH_INSTANCE
 
-    In case `AWS_AMI_VERSION` is not set, the avhclient will the latest AVH AMI available.
+    In case ``AWS_AMI_VERSION`` is not set, the avhclient will use the latest available version of AVH AMI.
 
-    In addition, a `Cloudformation` code can be used to create the AVH dependencies for
-    your account `here <https://github.com/ARM-software/VHT-GetStarted/tree/main/infrastructure/cloudformation>`_
+    AWS Cloudformation can be used to create the AWS resources required for AVH operation, as shown `in this template <https://github.com/ARM-software/VHT-GetStarted/tree/main/infrastructure/cloudformation>`_
 
 * When **reusing an AVH Instance**::
 
     export AWS_INSTANCE_ID=YOUR_INSTANCE
+
+Local Backend Setup
+#################
+
+Operation with a local backend requires no specific environment parameters, but assumes that necessary toolchain, AVH targets and utilities are installed locally on the machine and configured for execution in command line.
 
 ****
 
 Usage
 -----
 
-Select backend
+Getting Help 
 ##############
-The `avhclient` supports currently `local` and `aws` (default) backend. ::
 
-    avhclient -b aws
-    avhclient -b local
+To get the brief descriptions of all commands and options available with avhclient execute::
+
+    avhclient -h
+        
+You can also use option ``-h`` with a specific command to get help for it. For example for ``execute`` command::
+
+    avhclient execute -h
 
 Execute command
 ###############
-
-* Getting help for a specific command (e.g. `execute`)::
-
-    avhclient -b aws execute -h
 
 * Create a new AWS AVH instance and run AVH project
     The `execute` command bundles all necessary steps to build your
@@ -140,6 +168,8 @@ Execute command
 
 AVH YML file syntax
 -------------------
+
+avhclient ``execute`` command requires a specfile in YML format that describes details of individual steps to be executed on AVH. The file syntax is explained below.
 
 Fields
 ######
@@ -194,11 +224,3 @@ Example
       - Objects/basic.axf.map
       - basic-*.xunit
       - basic-*.zip
-
-****
-
-AVH Projects using AVH Client
------------------------------
-
-* `VHT-GetStarted <https://github.com/ARM-software/VHT-GetStarted>`_
-* `CMSIS-RTOS2-Validation <https://github.com/ARM-software/CMSIS-RTOS2_Validation>`_
