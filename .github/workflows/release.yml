@@ -24,12 +24,15 @@ jobs:
           twine check dist/*
       - name: Upload to PyPI
         if: ${{ github.event_name == 'release' }}
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
       - name: Upload to Test PyPI
         if: ${{ github.event_name == 'push' }}
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository_url: https://test.pypi.org/legacy/
+          user: __token__
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          verbose: true
