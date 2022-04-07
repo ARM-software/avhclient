@@ -8,17 +8,20 @@
 import logging
 import os
 import tarfile
-import yaml
 
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any
+from typing import Any, Dict, List
+
+import yaml
 
 from .avh_backend import AvhBackend, AvhBackendState
 from .helper import create_archive
 
 
 class AvhSpec:
+    """Wrapper for AVH spec file."""
+
     def __init__(self, path: Path):
         """AVH spec file
 
@@ -31,7 +34,8 @@ class AvhSpec:
             upload: (optional) List of glob patterns of files to be sent to the AVH backend. (see glob format)
             steps: (mandatory) List of steps to be executed on the AVH backend.
               - run: String written into a bash script and executed on the AVH backend inside the workspace directory.
-            download: (optional) List of glob patterns of files to be retrieved back from the AVH backend. (see glob format)
+            download: (optional) List of glob patterns of files to be retrieved back from the AVH backend.
+               (see glob format)
 
         Glob format:
             The list of glob patterns is evaluated in order.
@@ -45,32 +49,51 @@ class AvhSpec:
         if not path.exists():
             raise RuntimeError from FileNotFoundError(path)
 
-        with open(path) as file:
+        with open(path, encoding='UTF-8') as file:
             self._spec = yaml.safe_load(file)
 
-    def backend_settings(self, backend: str) -> dict[str, Any]:
-        return self._spec.get('backend', dict()).get(backend, dict())
+    def backend_settings(self, backend: str) -> Dict[str, Any]:
+        """Get the backend specific settings.
+
+        Params:
+            backend: The backend name to get settings for.
+
+        Returns:
+            The mapping of settings for the given backend.
+        """
+        return self._spec.get('backend', {}).get(backend, {})
 
     @property
     def workdir(self) -> Path:
+        """The working directory within the local workspace."""
         return self._path.parent.joinpath(self._spec.get('workdir', '.')).resolve()
 
     @property
-    def upload(self) -> list[str]:
+    def upload(self) -> List[str]:
+        """The glob pattern for files to be uploaded to the backend."""
         return self._spec.get('upload', ['**/*'])
 
     @property
-    def steps(self) -> list:
+    def steps(self) -> List:
+        """The steps to be executed on the backend."""
         return self._spec.get('steps', [])
 
     @property
-    def download(self) -> list[str]:
+    def download(self) -> List[str]:
+        """The glob pattern for files to be downloaded from the backend."""
         return self._spec.get('download', ['**/*'])
 
 
 class AvhClient:
+    """AVH Client"""
+
     @staticmethod
-    def get_available_backends() -> list[str]:
+    def get_available_backends() -> List[str]:
+        """Get a list of available backend implementations.
+
+        Returns:
+            List of backend names sorted by priority.
+        """
         backends = AvhBackend.find_implementations()
         return sorted(backends.keys(), key=lambda k: backends[k].priority())
 
@@ -91,13 +114,15 @@ class AvhClient:
         """Prepare the backend to execute AVH workload."""
         return self.backend.prepare()
 
-    def upload(self, workspace: Path = Path(""), patterns: list[str] = ['**/*']):
+    def upload(self, workspace: Path = Path(""), patterns: List[str] = None):
         """Upload the workspace to the AVH backend
 
         Args:
             workspace: The base directory for the workspace
             patterns: List if glob patters. Patterns prefixed with -: denote excludes.
         """
+        if not patterns:
+            patterns = ['**/*']
         avhin = None
         try:
             avhin = NamedTemporaryFile(mode='w+b', prefix='avhin-', suffix='.tbz2', delete=False)
@@ -108,7 +133,7 @@ class AvhClient:
             if avhin:
                 os.remove(avhin.name)
 
-    def run(self, cmds: list[str]):
+    def run(self, cmds: List[str]):
         """Run given commands on AVH backend
 
         Args:
@@ -116,13 +141,15 @@ class AvhClient:
         """
         self.backend.run_commands(cmds)
 
-    def download(self, workspace: Path = Path(""), patterns: list[str] = ['**/*']):
+    def download(self, workspace: Path = Path(""), patterns: List[str] = None):
         """Download the workspace from the AVH backend
 
         Args:
             workspace: The base directory for the workspace
             patterns: List if glob patters. Patterns prefixed with -: denote excludes.
         """
+        if not patterns:
+            patterns = ['**/*']
         avhout = None
         try:
             avhout = NamedTemporaryFile(mode='r+b', prefix='avhout-', suffix='.tbz2', delete=False)
@@ -152,10 +179,10 @@ class AvhClient:
         backend_state = AvhBackendState.INVALID
 
         spec = AvhSpec(specfile)
-        for k, v in spec.backend_settings(self.backend.name()).items():
-            kk = k.replace('-', '_')
-            if hasattr(self.backend, kk):
-                setattr(self.backend, kk, v)
+        for key, value in spec.backend_settings(self.backend.name()).items():
+            kkey = key.replace('-', '_')
+            if hasattr(self.backend, kkey):
+                setattr(self.backend, kkey, value)
 
         try:
             logging.info("Preparing instance...")

@@ -47,13 +47,12 @@ setup(
     entry_points={
         'console_scripts': ['avhclient=arm.avhclient.avh_cli:AvhCli']
     },
-    python_requires='>=3.9',
-    url='',
-    license='',
+    python_requires='>=3.8',
+    url='https://github.com/ARM-software/avhclient',
     author='Samuel Pelegrinello Caipers, Jonatan Antoni',
     author_email='Samuel.PelegrinelloCaipers@arm.com, Jonatan.Antoni@arm.com',
     description='Arm Virtual Hardware Command Line Interface',
-    long_description=open('README.rst').read(),
+    long_description=open('README.rst', encoding='UTF-8').read(),
     long_description_content_type='text/x-rst',
     classifiers=[
         "Development Status :: 5 - Production/Stable",
