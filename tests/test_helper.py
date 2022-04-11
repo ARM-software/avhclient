@@ -4,8 +4,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+
 import os
 import tarfile
+
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from unittest import TestCase
