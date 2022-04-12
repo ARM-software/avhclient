@@ -150,7 +150,7 @@ class TestAvhClient(TestCase):
                 with self.assertRaises(RuntimeError):
                     client.download(temp_dir, ["**/*.py", "-:_*"])
 
-                # THEN the backend download_workspace method got called once
+                # THEN the backend download_workspace method got not called
                 client.backend.mock.download_workspace.assert_not_called()
                 # ... AND the temporary directory is still empty
                 self.assertFalse(any(Path(temp_dir).iterdir()))
