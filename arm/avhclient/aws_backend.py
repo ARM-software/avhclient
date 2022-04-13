@@ -188,16 +188,16 @@ class AwsBackend(AvhBackend):
 
         self._is_aws_credentials_present()
 
-        logging.info('aws:Creating EC2 client...')
+        logging.debug('aws:Creating EC2 client...')
         self._ec2_client = boto3.client('ec2')
 
-        logging.info('aws:Creating SSM client...')
+        logging.debug('aws:Creating SSM client...')
         self._ssm_client = boto3.client('ssm')
 
-        logging.info('aws:Creating S3 client...')
+        logging.debug('aws:Creating S3 client...')
         self._s3_client = boto3.client('s3')
 
-        logging.info('aws:Creating S3 resource...')
+        logging.debug('aws:Creating S3 resource...')
         self._s3_resource = boto3.resource('s3')
 
         self._setup()
@@ -207,7 +207,7 @@ class AwsBackend(AvhBackend):
         if key in os.environ:
             logging.debug("aws:%s present!", key)
             return True
-        logging.info("aws:%s environment variable not present!", key)
+        logging.warning("aws:%s environment variable not present!", key)
         return False
 
     def _is_aws_credentials_present(self):
@@ -227,7 +227,7 @@ class AwsBackend(AvhBackend):
             Setup AWS object by collecting env vars & preparing AWS instance
         """
         # Initializing None all AVH related variables
-        logging.info("aws:setting up aws backend")
+        logging.debug("aws:setting up aws backend")
 
         # EC2-related info is not needed if an instance is already created
         if self.instance_name and not self.instance_id:
@@ -259,7 +259,8 @@ class AwsBackend(AvhBackend):
             logging.error("aws:environment variable `AWS_S3_BUCKET_NAME` needs to be present!")
             raise RuntimeError("aws:environment variable `AWS_S3_BUCKET_NAME` needs to be present!")
 
-        logging.info(f"aws:aws__repr__:{self.__repr__()}")
+        logging.debug("aws:aws__repr__:%s", self.__repr__())
+        logging.info("aws:Backend successfully initialized!")
 
     def find_instance_by_name(self, name: str) -> Union[str, None]:
         """Find an instance by name attribute.
@@ -292,7 +293,7 @@ class AwsBackend(AvhBackend):
             logging.debug("Response doesn't contain element 'InstanceId' in 'Instances'")
         else:
             instance_id = response['Reservations'][0]['Instances'][0]['InstanceId']
-            logging.info("Resolved EC2 instance by name to '%s'.", instance_id)
+            logging.info("aws:Resolved EC2 instance name %s as instance ID %s", name, instance_id)
         return instance_id
 
     def create_instance(self):
@@ -349,7 +350,7 @@ class AwsBackend(AvhBackend):
         kwargs = {k: v for k, v in kwargs.items() if v}
 
         logging.debug('aws:DryRun=True to test for permission check')
-        logging.debug(f"aws:create_ec2_instance:kwargs:{kwargs}")
+        logging.debug("aws:create_ec2_instance:kwargs:%s", kwargs)
 
         try:
             self._ec2_client.run_instances(**kwargs, DryRun=True)
@@ -368,7 +369,7 @@ class AwsBackend(AvhBackend):
         assert isinstance(self.instance_id, str)
         self.wait_ec2_running()
         self.wait_ec2_status_ok()
-
+        logging.info("aws:EC2 instance %s created!", self.instance_id)
         return self.instance_id
 
     def delete_file_from_cloud(self, key):
@@ -388,7 +389,7 @@ class AwsBackend(AvhBackend):
         This is a mandatory AVH backend method.
         """
         self._init()
-        logging.info(f"aws:Delete S3 Object from S3 Bucket {self.s3_bucket_name}, Key {key}")
+        logging.debug("aws:Delete S3 Object from S3 Bucket %s, Key %s", self.s3_bucket_name, key)
         try:
             response = self._s3_client.delete_object(
                 Bucket=self.s3_bucket_name,
@@ -416,9 +417,8 @@ class AwsBackend(AvhBackend):
         This is a mandatory AVH backend method.
         """
         self._init()
-        logging.info("aws:Download S3 File")
         try:
-            logging.info(f"Downloading S3 file from bucket `{self.s3_bucket_name}`, key `{key}`, filename `{filename}`")
+            logging.debug("aws:Downloading S3 file from bucket %s , key %s, filename %s", self.s3_bucket_name, key, filename)
             self._s3_client.download_file(self.s3_bucket_name, key, filename)
         except ClientError as e:
             if 'HeadObject operation: Not Found' in str(e):
@@ -475,9 +475,8 @@ class AwsBackend(AvhBackend):
                           sorted([str(k) for k, v in images], reverse=True))
             raise RuntimeError()
 
-        logging.info("aws:get_vht_ami_id_by_version:Selecting AMI version %s", versions[0])
-
         self.ami_id = images[versions[0]]
+        logging.info("aws:Selecting AMI version %s, AMI ID %s", versions[0], self.ami_id)
         return self.ami_id
 
     def get_instance_state(self):
@@ -505,9 +504,9 @@ class AwsBackend(AvhBackend):
         except ClientError as e:
             raise RuntimeError from e
 
-        logging.debug(f"aws:get_instance_state: {response}")
+        logging.debug("aws:get_instance_state: %s", response)
         instance_state = response['Reservations'][0]['Instances'][0]['State']['Name']
-        logging.info(f"aws:The EC2 instance state is {instance_state}...")
+        logging.debug("aws:The EC2 instance state is %s...", instance_state)
         return instance_state
 
     def get_s3_file_content(self, key):
@@ -534,7 +533,7 @@ class AwsBackend(AvhBackend):
         try:
             content = self._s3_resource.Object(self.s3_bucket_name, key).get()['Body'].read().decode('utf-8')
         except self._s3_client.exceptions.NoSuchKey:
-            logging.error("aws:Key '%s' not found on S3 bucket '%s'", key, self.s3_bucket_name)
+            logging.debug("aws:Key '%s' not found on S3 bucket '%s'", key, self.s3_bucket_name)
         return content
 
     def get_s3_ssm_command_id_key(self, command_id, output_type):
@@ -581,9 +580,9 @@ class AwsBackend(AvhBackend):
         except ClientError as e:
             raise RuntimeError from e
 
-        logging.debug(f"aws:get_ssm_command_id_status:{response}")
+        logging.debug("aws:get_ssm_command_id_status:%s", response)
         command_id_status = response['Commands'][0]['Status']
-        logging.info(f"aws:The command_id {command_id} status is {command_id_status}...")
+        logging.debug("aws:The command_id %s status is %s...", command_id, command_id_status)
         return command_id_status
 
     def get_ssm_command_id_status_details(self, command_id):
@@ -614,8 +613,8 @@ class AwsBackend(AvhBackend):
         except ClientError as e:
             raise RuntimeError from e
 
-        logging.debug(f"aws:get_ssm_command_id_status_details:{response}")
-        logging.info(f"aws:The command_id {command_id} status details is {response['StatusDetails']}...")
+        logging.debug("aws:get_ssm_command_id_status_details:%s", response)
+        logging.info("aws:The command_id %s status details is %s ...", command_id, response['StatusDetails'])
         return response['StatusDetails']
 
     def get_ssm_command_id_stdout_url(self, command_id):
@@ -645,7 +644,7 @@ class AwsBackend(AvhBackend):
         except ClientError as e:
             raise RuntimeError from e
 
-        logging.debug(f"aws:get_ssm_command_id_stdout_url:{response}")
+        logging.debug("aws:get_ssm_command_id_stdout_url:%s", response)
         return response['CommandInvocations'][0]['StandardOutputUrl']
 
     def get_ssm_command_id_stderr_url(self, command_id):
@@ -675,7 +674,7 @@ class AwsBackend(AvhBackend):
         except ClientError as e:
             raise RuntimeError from e
 
-        logging.debug(f"aws:get_ssm_command_id_stderr_url:{response}")
+        logging.debug("aws:get_ssm_command_id_stderr_url:%s", response)
         return response['CommandInvocations'][0]['StandardErrorUrl']
 
     def create_or_start_instance(self) -> AvhBackendState:
@@ -688,13 +687,13 @@ class AwsBackend(AvhBackend):
         if self.instance_id:
             state = self.get_instance_state()
             if state == "running":
-                logging.info(f"aws:EC2 Instance {self.instance_id} already running!")
+                logging.debug("aws:EC2 Instance %s already running!", self.instance_id)
                 return AvhBackendState.RUNNING
             if state == "stopped":
-                logging.info(f"aws:EC2 Instance {self.instance_id} provided!")
+                logging.debug("aws:EC2 Instance %s provided!", self.instance_id)
                 self.start_instance()
                 return AvhBackendState.STARTED
-            logging.warning(f"aws:EC2 Instance {self.instance_id} cannot be reused from state '{state}'!")
+            logging.warning("aws:EC2 Instance %s cannot be reused from state %s!", self.instance_id, state)
 
         self.create_instance()
         return AvhBackendState.CREATED
@@ -703,6 +702,7 @@ class AwsBackend(AvhBackend):
         self._init()
         state = self.create_or_start_instance()
         if state == AvhBackendState.CREATED:
+            logging.info("aws:Setting up the instance...")
             commands = [
                 f"runuser -l ubuntu -c 'cat ~/.bashrc | grep export > {self.AMI_WORKDIR}/vars'",
                 f"runuser -l ubuntu -c 'mkdir -p {self.AMI_WORKDIR}/packs/.Web'",
@@ -710,12 +710,23 @@ class AwsBackend(AvhBackend):
                 "apt update",
                 "apt install awscli -y"
             ]
-            self.send_remote_command_batch(commands, working_dir=self.AMI_WORKDIR)
+            self.send_remote_command_batch(
+                commands,
+                working_dir=self.AMI_WORKDIR,
+                fail_if_unsuccess=True,
+                enable_logging_info=False)
+
+        logging.info("aws:Setting up instance workspace...")
         commands = [
             f"runuser -l ubuntu -c 'rm -rf {self.AMI_WORKDIR}/workspace'",
             f"runuser -l ubuntu -c 'mkdir -p {self.AMI_WORKDIR}/workspace'"
         ]
-        self.send_remote_command_batch(commands, working_dir=self.AMI_WORKDIR)
+        self.send_remote_command_batch(
+            commands,
+            working_dir=self.AMI_WORKDIR,
+            fail_if_unsuccess=True,
+            enable_logging_info=False)
+
         return state
 
     def run_commands(self, cmds: List[str]):
@@ -731,13 +742,28 @@ class AwsBackend(AvhBackend):
 
             self.upload_file_to_cloud(str(shfile), shfile.name)
 
+            # commands which do not need to go to INFO
             commands = [
                 f"runuser -l ubuntu -c 'aws s3 cp s3://{self.s3_bucket_name}/{shfile.name} "
-                f"{self.AMI_WORKDIR}/{shfile.name} && chmod +x {self.AMI_WORKDIR}/{shfile.name}'",
+                f"{self.AMI_WORKDIR}/{shfile.name} && chmod +x {self.AMI_WORKDIR}/{shfile.name}'"
+            ]
+            self.send_remote_command_batch(
+                commands,
+                working_dir=self.AMI_WORKDIR,
+                fail_if_unsuccess=True,
+                enable_logging_info=False)
+
+            # commands which need to go to INFO
+            commands = [
                 f"runuser -l ubuntu -c 'source {self.AMI_WORKDIR}/vars "
                 f"&& pushd {self.AMI_WORKDIR}/workspace && {self.AMI_WORKDIR}/{shfile.name}'"
             ]
-            self.send_remote_command_batch(commands, working_dir=self.AMI_WORKDIR)
+            self.send_remote_command_batch(
+                commands,
+                working_dir=self.AMI_WORKDIR,
+                fail_if_unsuccess=True,
+                enable_logging_info=True)
+
         finally:
             os.unlink(shfile)
             self.delete_file_from_cloud(shfile.name)
@@ -753,7 +779,11 @@ class AwsBackend(AvhBackend):
                 f"runuser -l ubuntu -c 'cd {self.AMI_WORKDIR}/workspace; tar xf {self.AMI_WORKDIR}/{filename.name}'",
                 f"runuser -l ubuntu -c 'rm -f {self.AMI_WORKDIR}/{filename.name}'"
             ]
-            self.send_remote_command_batch(commands, working_dir=self.AMI_WORKDIR)
+            self.send_remote_command_batch(
+                commands,
+                working_dir=self.AMI_WORKDIR,
+                fail_if_unsuccess=True,
+                enable_logging_info=False)
         finally:
             self.delete_file_from_cloud(filename.name)
 
@@ -777,7 +807,11 @@ class AwsBackend(AvhBackend):
                 f"runuser -l ubuntu -c 'aws s3 cp {self.AMI_WORKDIR}/{filename.stem}.tar.bz2 s3://{self.s3_bucket_name}/{filename.name}'",
                 f"runuser -l ubuntu -c 'rm -f {self.AMI_WORKDIR}/{filename.stem}.tar.bz2'",
             ]
-            self.send_remote_command_batch(commands, working_dir=self.AMI_WORKDIR)
+            self.send_remote_command_batch(
+                commands,
+                working_dir=self.AMI_WORKDIR,
+                fail_if_unsuccess=True,
+                enable_logging_info=False)
             self.download_file_from_cloud(str(filename), filename.name)
         finally:
             self.delete_file_from_cloud(filename.name)
@@ -797,10 +831,16 @@ class AwsBackend(AvhBackend):
             https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.upload_file
         """
         self._init()
-        logging.info(f"aws:Upload File {filename} to S3 Bucket {self.s3_bucket_name}, Key {key}")
+        logging.debug("aws:Upload File %s to S3 Bucket %s, Key %s", filename, self.s3_bucket_name, key)
         self._s3_resource.meta.client.upload_file(filename, self.s3_bucket_name, key)
 
-    def send_remote_command(self, command_list, working_dir, fail_if_unsuccess=True):
+    def send_remote_command(
+            self,
+            command_list,
+            working_dir,
+            fail_if_unsuccess=True,
+            enable_logging_info=True):
+
         """
         Send a remote command to an EC2 Instance.
 
@@ -812,6 +852,7 @@ class AwsBackend(AvhBackend):
             working_dir (Directory where the remote command will be executed)
         Boolean
             fail_if_unsuccess (Fail the method in case the command failed)
+            enable_logging_info (Enable or disable command logging)
 
         Return
         ------
@@ -820,21 +861,30 @@ class AwsBackend(AvhBackend):
         This is a mandatory AVH backend method.
         """
         self._init()
-        logging.info(f"avh: command_list = {command_list}")
+        logging.debug("aws:command_list = %s", command_list)
         response = self.send_ssm_shell_command(
             command_list=command_list,
             working_dir=working_dir
         )
 
+        logging.log(logging.INFO if enable_logging_info else logging.DEBUG, '='*80)
         for i in response.keys():
-            logging.info(f"avh:{i} = {response[i].strip()}")
-        if response['CommandIdStatus'] != 'Success' and fail_if_unsuccess:
-            logging.error(f"Command {command_list} failed")
-            raise RuntimeError()
+            logging.log(logging.INFO if enable_logging_info else logging.DEBUG,
+                "aws:send_remote_command:%s = %s", i, response[i].strip())
 
+        if response['CommandIdStatus'] != 'Success' and fail_if_unsuccess:
+            logging.error("aws:send_remote_command:Command %s failed!", command_list)
+            logging.error("aws:send_remote_command:response\n%s", response)
+            raise RuntimeError()
         return response
 
-    def send_remote_command_batch(self, command_list, working_dir, fail_if_unsuccess=True):
+    def send_remote_command_batch(
+            self,
+            command_list,
+            working_dir,
+            fail_if_unsuccess=True,
+            enable_logging_info=True):
+
         """
         Send batch of remote commands to an EC2 Instance.
 
@@ -846,6 +896,7 @@ class AwsBackend(AvhBackend):
             working_dir (Directory where the remote command will be executed)
         Boolean
             fail_if_unsuccess (Fail the method in case the command failed - Default: True)
+            enable_logging_info (Enable or disable command logging)
 
         Return
         ------
@@ -854,7 +905,7 @@ class AwsBackend(AvhBackend):
         This is a mandatory AVH backend method.
         """
         self._init()
-        logging.info(f"avh: command_list = {command_list}")
+        logging.debug("aws: command_list = %s", command_list)
         all_responses = []
 
         for command in command_list:
@@ -862,17 +913,18 @@ class AwsBackend(AvhBackend):
                 self.send_remote_command(
                     command_list=command,
                     working_dir=working_dir,
-                    fail_if_unsuccess=fail_if_unsuccess
-                )
-            )
-        logging.debug(f"avh: all_responses = {all_responses}")
+                    fail_if_unsuccess=fail_if_unsuccess,
+                    enable_logging_info=enable_logging_info))
+
+        logging.debug("aws: all_responses = %s", all_responses)
         return all_responses
 
-    def send_ssm_shell_command(self,
-                               command_list,
-                               working_dir='/',
-                               return_type='all',
-                               timeout_seconds=600):
+    def send_ssm_shell_command(
+            self,
+            command_list,
+            working_dir='/',
+            return_type='all',
+            timeout_seconds=600):
         """
         Send SSM Shell Commands to a EC2 Instance
 
@@ -906,7 +958,7 @@ class AwsBackend(AvhBackend):
             https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-plugins.html#aws-runShellScript
         """
 
-        logging.info(f"aws:send_ssm_shell_command:{working_dir}:{command_list}")
+        logging.debug("aws:send_ssm_shell_command:%s:%s", working_dir, command_list)
 
         try:
             response = self._ssm_client.send_command(
@@ -929,19 +981,19 @@ class AwsBackend(AvhBackend):
         except ClientError as e:
             raise RuntimeError from e
 
-        logging.debug(f"aws:send_ssm_shell_command:{response}")
+        logging.debug("aws:send_ssm_shell_command:%s", response)
         command_id = response['Command']['CommandId']
-        logging.info(f"aws:command_id = {command_id}")
+        logging.debug("aws:command_id = %s", command_id)
 
         # We need a little bit of time to wait for a command
         time.sleep(2)
 
-        logging.info(f"aws:Waiting command id {command_id} to finish")
+        logging.debug("aws:Waiting command id %s to finish", command_id)
         self.wait_ssm_command_finished(command_id)
 
-        logging.info(f"aws:Get command id {command_id} status")
+        logging.debug("aws:Get command id %s status", command_id)
         command_id_status = self.get_ssm_command_id_status(command_id)
-        logging.info(f"aws:Command id status = {command_id_status}")
+        logging.debug("aws:Command status = %s", command_id_status)
 
         stdout_key = self.get_s3_ssm_command_id_key(command_id, 'stdout')
         stdout_str = self.get_s3_file_content(stdout_key)
@@ -975,7 +1027,7 @@ class AwsBackend(AvhBackend):
         This is a mandatory AVH backend method.
         """
         self._init()
-        logging.info(f"aws:Starting EC2 instance {self.instance_id}")
+        logging.info("aws:Starting EC2 instance %s", self.instance_id)
 
         try:
             response = self._ec2_client.start_instances(
@@ -986,7 +1038,7 @@ class AwsBackend(AvhBackend):
         except ClientError as e:
             raise RuntimeError from e
 
-        logging.debug(f"aws:start_ec2_instance:{response}")
+        logging.debug("aws:start_ec2_instance:%s", response)
         self.wait_ec2_running()
         self.wait_ec2_status_ok()
 
@@ -1004,7 +1056,7 @@ class AwsBackend(AvhBackend):
         This is a mandatory AVH backend method.
         """
         self._init()
-        logging.info(f"aws:Stopping EC2 instance {self.instance_id}")
+        logging.info("aws:Stopping EC2 instance %s", self.instance_id)
 
         try:
             response = self._ec2_client.stop_instances(
@@ -1015,7 +1067,7 @@ class AwsBackend(AvhBackend):
         except ClientError as e:
             raise RuntimeError from e
 
-        logging.debug(f"aws:stop_instance:{response}")
+        logging.debug("aws:stop_instance:%s", response)
         self.wait_ec2_stopped()
 
         return self.instance_id
@@ -1029,7 +1081,7 @@ class AwsBackend(AvhBackend):
         API Definition
             https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Waiter.InstanceStatusOk
         """
-        logging.info(f"aws:Waiting until EC2 instance id {self.instance_id} Status Ok...")
+        logging.debug("aws:Waiting until EC2 instance id %s Status Ok...", self.instance_id)
 
         try:
             waiter = self._ec2_client.get_waiter('instance_status_ok')
@@ -1050,7 +1102,7 @@ class AwsBackend(AvhBackend):
         API Definition
             https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Waiter.InstanceRunning
         """
-        logging.info(f"aws:Waiting until EC2 instance id {self.instance_id} is running...")
+        logging.debug("aws:Waiting until EC2 instance id %s is running...", self.instance_id)
 
         try:
             waiter = self._ec2_client.get_waiter('instance_running')
@@ -1071,7 +1123,7 @@ class AwsBackend(AvhBackend):
         API Definition
             https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Instance.wait_until_stopped
         """
-        logging.info(f"aws:Waiting until EC2 instance id {self.instance_id} is stopped...")
+        logging.debug("aws:Waiting until EC2 instance id %s is stopped...", self.instance_id)
         instance = boto3.resource('ec2').Instance(self.instance_id)
         instance.wait_until_stopped()
 
@@ -1084,7 +1136,7 @@ class AwsBackend(AvhBackend):
         API Definition
             https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Instance.wait_until_terminated
         """
-        logging.info(f"aws:Waiting until EC2 instance id {self.instance_id} is terminated...")
+        logging.debug("aws:Waiting until EC2 instance id %s is terminated...", self.instance_id)
         instance = boto3.resource('ec2').Instance(self.instance_id)
         instance.wait_until_terminated()
 
@@ -1153,7 +1205,7 @@ class AwsBackend(AvhBackend):
             )
         except WaiterError:
             if "Failed" in str(WaiterError):
-                logging.info("aws:Failed status found while wainting for command id")
+                logging.error("aws:Failed status found while wainting for command id")
 
     def terminate_instance(self):
         """
@@ -1190,7 +1242,7 @@ class AwsBackend(AvhBackend):
         except ClientError as e:
             raise RuntimeError from e
 
-        logging.debug(f"aws:terminate_instance:{response}")
+        logging.debug("aws:terminate_instance:%s", response)
 
         self.wait_ec2_terminated()
         return response
