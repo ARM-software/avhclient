@@ -185,19 +185,30 @@ class AvhClient:
                 setattr(self.backend, kkey, value)
 
         try:
+            logging.info("")
             logging.info("Preparing instance...")
+            logging.info('='*80)
             backend_state = self.backend.prepare()
 
+            logging.info("")
             logging.info("Uploading workspace...")
+            logging.info('='*80)
             self.upload(spec.workdir, spec.upload)
 
+            logging.info("")
             logging.info("Executing...")
+            logging.info('='*80)
             for step in spec.steps:
                 if 'run' in step:
                     cmds = [cmd for cmd in step['run'].split('\n') if cmd]
                     self.run(cmds)
 
+            logging.info("")
             logging.info("Downloading workspace...")
+            logging.info('='*80)
             self.download(spec.workdir, spec.download)
         finally:
+            logging.info("")
+            logging.info("Teardown instance...")
+            logging.info('='*80)
             self.backend.cleanup(backend_state)
