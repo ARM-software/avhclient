@@ -65,6 +65,15 @@ class AwsBackend(AvhBackend):
         self._ami_version = value
 
     @property
+    def default_region(self) -> str:
+        "AWS Default Region (AWS_DEFAULT_REGION)"
+        return self._default_region or os.environ.get('AWS_DEFAULT_REGION', 'eu-west-1')
+
+    @default_region.setter
+    def default_region(self, value: str):
+        self._default_region = value
+
+    @property
     def iam_profile(self) -> str:
         """Amazon IAM profile (AWS_IAM_PROFILE)."""
         return self._iam_profile or os.environ.get('AWS_IAM_PROFILE', '')
@@ -157,6 +166,7 @@ class AwsBackend(AvhBackend):
     def __init__(self):
         self._ami_id = None
         self._ami_version = None
+        self._default_region = None
         self._iam_profile = None
         self._instance_name = None
         self._instance_id = None
@@ -172,6 +182,7 @@ class AwsBackend(AvhBackend):
         return (
             f"ami_id={self.ami_id},"
             f"ami_version={self.ami_version},"
+            f"default_region={self.default_region},"
             f"iam_profile={self.iam_profile},"
             f"instance_name={self.instance_name},"
             f"instance_id={self.instance_id},"
@@ -745,7 +756,8 @@ class AwsBackend(AvhBackend):
             # commands which do not need to go to INFO
             commands = [
                 f"runuser -l ubuntu -c 'aws s3 cp s3://{self.s3_bucket_name}/{shfile.name} "
-                f"{self.AMI_WORKDIR}/{shfile.name} && chmod +x {self.AMI_WORKDIR}/{shfile.name}'"
+                f"{self.AMI_WORKDIR}/{shfile.name} --region {self.default_region} && "
+                f"chmod +x {self.AMI_WORKDIR}/{shfile.name}'"
             ]
             self.send_remote_command_batch(
                 commands,
@@ -775,7 +787,7 @@ class AwsBackend(AvhBackend):
         try:
             self.upload_file_to_cloud(str(filename), filename.name)
             commands = [
-                f"runuser -l ubuntu -c 'aws s3 cp s3://{self.s3_bucket_name}/{filename.name} {self.AMI_WORKDIR}/{filename.name}'",
+                f"runuser -l ubuntu -c 'aws s3 cp s3://{self.s3_bucket_name}/{filename.name} {self.AMI_WORKDIR}/{filename.name} --region {self.default_region}'",
                 f"runuser -l ubuntu -c 'cd {self.AMI_WORKDIR}/workspace; tar xf {self.AMI_WORKDIR}/{filename.name}'",
                 f"runuser -l ubuntu -c 'rm -f {self.AMI_WORKDIR}/{filename.name}'"
             ]
@@ -804,7 +816,7 @@ class AwsBackend(AvhBackend):
 
             commands = [
                 f"runuser -l ubuntu -c 'cd {self.AMI_WORKDIR}/workspace; {'; '.join(tarbz2)}'",
-                f"runuser -l ubuntu -c 'aws s3 cp {self.AMI_WORKDIR}/{filename.stem}.tar.bz2 s3://{self.s3_bucket_name}/{filename.name}'",
+                f"runuser -l ubuntu -c 'aws s3 cp {self.AMI_WORKDIR}/{filename.stem}.tar.bz2 s3://{self.s3_bucket_name}/{filename.name} --region {self.default_region}'",
                 f"runuser -l ubuntu -c 'rm -f {self.AMI_WORKDIR}/{filename.stem}.tar.bz2'",
             ]
             self.send_remote_command_batch(

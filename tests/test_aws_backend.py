@@ -311,6 +311,17 @@ class TestAwsBackend(TestCase):
         aws_client.wait_ec2_running.assert_called()
         self.assertEqual('i-064a8d261aea65d9e', instance_id)
 
+    def test_default_region(self):
+        """Default value from the module"""
+        aws_client = self.get_avh_aws_instance()
+        self.assertEqual(aws_client.default_region, "eu-west-1")
+
+    @patch.dict(os.environ, {"AWS_DEFAULT_REGION":"eu-central-1"})
+    def test_default_region_another_region(self):
+        """Set default region value from the module"""
+        aws_client = self.get_avh_aws_instance()
+        self.assertEqual(aws_client.default_region, "eu-central-1")
+
     def test_delete_file_from_cloud(self):
         aws_client = self.get_avh_aws_instance()
 
