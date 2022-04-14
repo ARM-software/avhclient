@@ -38,7 +38,7 @@ Other environments can be supported using demonstrated concepts as well.
 
 **Example projects using AVH Client**
 
-* `VHT-GetStarted <https://github.com/ARM-software/VHT-GetStarted>`_
+* `AVH-GetStarted <https://github.com/ARM-software/AVH-GetStarted>`_
 * `CMSIS-RTOS2-Validation <https://github.com/ARM-software/CMSIS-RTOS2_Validation>`_
 
 ****
@@ -56,7 +56,7 @@ Backend Setup
 -------------
 avhclient can control different backends with Arm Virtual Hardware. Following options are currently available:
 
-* ``aws`` (default) - interacts with AVH AMI available through `AWS Marketplace <https://arm-software.github.io/VHT/main/infrastructure/html/index.html#AWS>`_
+* ``aws`` (default) - interacts with AVH AMI available through `AWS Marketplace <https://arm-software.github.io/AVH/main/infrastructure/html/index.html#AWS>`_
 * ``local`` - operates with AVH Targets installed locally.
 
 The backend can be specified with ``-b`` option preceding the actual avhclient command.
@@ -109,7 +109,7 @@ In order for avhclient to create or access an AVH instance following parameters 
 
     In case ``AWS_AMI_VERSION`` is not set, the avhclient will use the latest available version of AVH AMI.
 
-    AWS Cloudformation can be used to create the AWS resources required for AVH operation, as shown `in this template <https://github.com/ARM-software/VHT-GetStarted/tree/main/infrastructure/cloudformation>`_
+    AWS Cloudformation can be used to create the AWS resources required for AVH operation, as shown `in this template <https://github.com/ARM-software/AVH-GetStarted/tree/main/infrastructure/cloudformation>`_
 
 * When **reusing an AVH Instance**::
 
@@ -151,18 +151,18 @@ Execute command
 
     Inform the path for the `avh.yml` file for your AVH project (example)::
 
-        avhclient -b aws execute --specfile VHT-GetStarted/basic/avh.yml
+        avhclient -b aws execute --specfile AVH-GetStarted/basic/avh.yml
 
 * You can also run in AVH commands in your local computer by selecting `local` backend::
 
-        avhclient -b local execute --specfile VHT-GetStarted/basic/avh.yml
+        avhclient -b local execute --specfile AVH-GetStarted/basic/avh.yml
 
 * There are also backend specific info you can provide to the tool::
 
         avhclient -b aws -h (get full list)
-        avhclient -b aws --instance-name MY_NEW_NAME execute --specfile VHT-GetStarted/basic/avh.yml (seeting a new AVH instance name)
-        avhclient -b aws --ami-version 1.1.0 --specfile VHT-GetStarted/basic/avh.yml (Create a new VHT instance from a v1.1.0 AVH AMI)
-        avhclient -b aws --ami-version >1.1.0 --specfile VHT-GetStarted/basic/avh.yml (Create a new VHT instance from a >v1.1.0 AVH AMI)
+        avhclient -b aws --instance-name MY_NEW_NAME execute --specfile AVH-GetStarted/basic/avh.yml (seeting a new AVH instance name)
+        avhclient -b aws --ami-version 1.1.0 --specfile AVH-GetStarted/basic/avh.yml (Create a new AVH instance from a v1.1.0 AVH AMI)
+        avhclient -b aws --ami-version >1.1.0 --specfile AVH-GetStarted/basic/avh.yml (Create a new AVH instance from a >v1.1.0 AVH AMI)
 
 ****
 
@@ -198,7 +198,7 @@ Example
 
 .. code-block::
 
-    name: "VHT GetStarted Example"
+    name: "AVH GetStarted Example"
     workdir: ./
     backend:
       aws:
