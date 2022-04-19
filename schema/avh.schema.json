@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/ARM-software/avhclient/main/schema/avh.schema.json",
+  "title": "AVH Client for Python workflow",
+  "version": "0.1.3",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "A name for this workflow."
+    },
+    "workdir": {
+      "type": "string",
+      "description": "The working directory on the local machine.",
+      "default": "./"
+    },
+    "backend": {
+      "type": "object",
+      "description": "Backend specific configuration parameters.",
+      "patternProperties": { "^(.*)$": { "type": "object" } }
+    },
+    "upload": {
+      "type": "array",
+      "description": "List of glob patterns of files (relative to workdir) to be sent to the AVH backend.",
+      "default": "**/*"
+    },
+    "steps": {
+      "type": "array",
+      "description": "List of steps to be executed on the AVH backend.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "type": "string",
+            "description": "Script to run with bash."
+          }
+        }
+      }
+    },
+    "download": {
+      "type": "array",
+      "description": "List of glob patterns of files (relative to workdir) to be retrieved from the AVH backend.",
+      "default": "**/*"
+    }
+  },
+  "required": [ "steps" ]
+}
