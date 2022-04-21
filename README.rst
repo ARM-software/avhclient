@@ -126,13 +126,13 @@ Operation with a local backend requires no specific environment parameters, but 
 Usage
 -----
 
-Getting Help 
+Getting Help
 ############
 
 To get the brief descriptions of all commands and options available with avhclient execute::
 
     avhclient -h
-        
+
 You can also use option ``-h`` with a specific command to get help for it. For example for ``execute`` command::
 
     avhclient execute -h
@@ -172,6 +172,8 @@ AVH YML file syntax
 
 avhclient ``execute`` command requires a specfile in YML format that describes details of individual steps to be executed on AVH. The file syntax is explained below.
 
+A JSON schema for automatic checks and auto-completion is in `schema/avh.schema.json <schema/avh.schema.json>`_.
+
 Fields
 ######
 
@@ -183,10 +185,10 @@ Fields
                 backend: (optional) Dictionary with backend specific parameters.
                   aws: (optional) Dictionary with AWS backend specific parameters. (see backend help)
                   local: (optional) Dictionary with local backend specific parameters. (see backend help)
-                upload: (optional) List of glob patterns of files to be sent to the AVH backend. (see glob format)
+                upload: (optional) List of glob patterns of files (relative to workdir) to be sent to the AVH backend. (see glob format)
                 steps: (mandatory) List of steps to be executed on the AVH backend.
                   - run: String written into a bash script and executed on the AVH backend inside the workspace directory.
-                download: (optional) List of glob patterns of files to be retrieved back from the AVH backend. (see glob format)
+                download: (optional) List of glob patterns of files (relative to workdir) to be retrieved back from the AVH backend. (see glob format)
             Glob format:
                 The list of glob patterns is evaluated in order.
                 Wildcard '*' matches all files but no directory except hidden files (starting with '.').
@@ -198,6 +200,8 @@ Example
 #######
 
 .. code-block::
+
+    # yaml-language-server: $schema=https://raw.githubusercontent.com/ARM-software/avhclient/main/schema/avh.schema.json
 
     name: "AVH GetStarted Example"
     workdir: ./
