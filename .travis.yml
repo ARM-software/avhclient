@@ -14,6 +14,8 @@ stages:
   - Unit Tests
   - name: CodeQL
     if: branchs = main
+  - name: Release
+    if: tag ~= ^v*
 
 # Unit tests jobs common `install` and `script` phase
 _shared_install: &shared_script
@@ -145,3 +147,29 @@ jobs:
         - echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
       # For the security analysis we can use SonarCloud here:
       # https://docs.travis-ci.com/user/sonarcloud/
+    - stage: Release
+      name: Release
+      os: linux
+      dist: focal
+      language: python
+      python: 3.8
+      install:
+        - python -m pip install --upgrade pip
+        - pip install -U setuptools twine wheel
+      script:
+        - python setup.py sdist bdist_wheel
+        - twine check dist/*
+      deploy:
+        - provider: pypi
+          username: __token__
+          password:
+            secure: "<your_encrypted_token_here>"
+          on:
+            tags: true
+        # For the test PyPI release
+        - provider: pypi
+          username: __token__
+          password:
+            secure: "<your_encrypted_token_here>"
+          on:
+            tags: true
