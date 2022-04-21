@@ -115,26 +115,33 @@ jobs:
       os: windows
       language: shell
       before_install:
-        - choco install python3
-        - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
+        - choco install python --version 3.8
+        - export PATH="/c/Python38:/c/Python38/Scripts:$path"
       <<: *shared_install
       <<: *shared_script
-        #- stage: Unit Tests
-        #  name: Unit Tests - Windows - Python3.9
-        #  env:
-        #    - AWS_DEFAULT_REGION="eu-west-1"
-        #  os: windows
-        #  language: shell
-        #  <<: *shared_install
-        #  <<: *shared_script
-        #- stage: Unit Tests
-        #  name: Unit Tests - Windows - Python3.10
-        #  env:
-        #    - AWS_DEFAULT_REGION="eu-west-1"
-        #  os: windows
-        #  language: shell
-        #  <<: *shared_install
-        #  <<: *shared_script
+    - stage: Unit Tests
+      name: Unit Tests - Windows - Python3.9
+      env:
+        - AWS_DEFAULT_REGION="eu-west-1"
+      os: windows
+      language: shell
+      before_install:
+        - choco install python --version 3.9
+        - export path=/c/python39:/c/python39/scripts:$path
+      <<: *shared_install
+      <<: *shared_script
+    - stage: Unit Tests
+      name: Unit Tests - Windows - Python3.10
+      env:
+        - AWS_DEFAULT_REGION="eu-west-1"
+      os: windows
+      language: shell
+      before_install:
+        - choco install python --version 3.10
+        - export path=/c/python310:/c/python310/scripts:$path
+      <<: *shared_install
+      <<: *shared_script
+
     - stage: CodeQL
       name: Analyze
       << : *ubuntu_latest
@@ -146,6 +153,7 @@ jobs:
         - echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
       # For the security analysis we can use SonarCloud as addon:
       # https://docs.travis-ci.com/user/sonarcloud/
+
     - stage: Release
       name: Release
       << : *ubuntu_latest
