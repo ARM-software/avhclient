@@ -22,17 +22,21 @@ _shared_install: &shared_script
 install:
     - python -m pip install --upgrade pip
     - pip install -e .[dev]
+
 _shared_script: &shared_script
 script:
     - coverage run --branch -m xmlrunner -o junit discover
     - coverage xml --include="./arm/avhclient/**"
 
+_ubuntu_latest: &ubuntu_latest
+os: linux
+dist: focal
+
 jobs:
   include:
     - stage: Build
       name: Build Distribution
-      os: linux
-      dist: focal
+      << : *ubuntu_latest
       # Install setup dependencies
       install: 
         - python -m pip install --upgrade pip
@@ -43,8 +47,7 @@ jobs:
         - twine check dist/*
     - stage: Lint
       name: Run PyLint checks
-      os: linux
-      dist: focal
+      << : *ubuntu_latest
       # Install dev dependencies
       install:
         - python -m pip install --upgrade pip
@@ -57,8 +60,7 @@ jobs:
       name: Unit Tests - Ubuntu - Python3.8
       env:
         - AWS_DEFAULT_REGION="eu-west-1"
-      os: linux
-      dist: focal
+      << : *ubuntu_latest
       python: 3.8
       <<: *shared_install
       <<: *shared_script
@@ -66,8 +68,7 @@ jobs:
       name: Unit Tests - Ubuntu - Python3.9
       env:
         - AWS_DEFAULT_REGION="eu-west-1"
-      os: linux
-      dist: focal
+      << : *ubuntu_latest
       python: 3.9
       <<: *shared_install
       <<: *shared_script
@@ -75,8 +76,7 @@ jobs:
       name: Unit Tests - Ubuntu - Python3.10
       env:
         - AWS_DEFAULT_REGION="eu-west-1"
-      os: linux
-      dist: focal
+      << : *ubuntu_latest
       python: 3.10
       <<: *shared_install
       <<: *shared_script
@@ -137,20 +137,18 @@ jobs:
         #  <<: *shared_script
     - stage: CodeQL
       name: Analyze
-      os: linux
-      dist: focal
+      << : *ubuntu_latest
       language: python
       python: 3.9
       install:
         - python -m pip install --upgrade pip
         - pip install -e .
         - echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
-      # For the security analysis we can use SonarCloud here:
+      # For the security analysis we can use SonarCloud as addon:
       # https://docs.travis-ci.com/user/sonarcloud/
     - stage: Release
       name: Release
-      os: linux
-      dist: focal
+      << : *ubuntu_latest
       language: python
       python: 3.8
       install:
