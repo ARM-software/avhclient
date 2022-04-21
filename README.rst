@@ -40,6 +40,7 @@ Other environments can be supported using demonstrated concepts as well.
 
 * `AVH-GetStarted <https://github.com/ARM-software/AVH-GetStarted>`_
 * `CMSIS-RTOS2-Validation <https://github.com/ARM-software/CMSIS-RTOS2_Validation>`_
+* `TensorFlow Lite for Microcontrollers <https://github.com/tensorflow/tflite-micro>`_
 
 ****
 
