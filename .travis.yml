@@ -6,14 +6,16 @@ env:
   global:
     - PYTHON_VERSION: 3.8
 
-if: (type == push AND branch == main)
+if: (type = push AND branch = main)
 
 stages:
   - Build
   - Lint
   - Unit Tests
+  - name: CodeQL
+    if: branchs = main
 
-# Unit tests jobs common install and script phase
+# Unit tests jobs common `install` and `script` phase
 _shared_install: &shared_script
 install:
     - python -m pip install --upgrade pip
@@ -131,3 +133,15 @@ jobs:
         #  language: shell
         #  <<: *shared_install
         #  <<: *shared_script
+    - stage: CodeQL
+      name: Analyze
+      os: linux
+      dist: focal
+      language: python
+      python: 3.9
+      install:
+        - python -m pip install --upgrade pip
+        - pip install -e .
+        - echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
+      # For the security analysis we can use SonarCloud here:
+      # https://docs.travis-ci.com/user/sonarcloud/
