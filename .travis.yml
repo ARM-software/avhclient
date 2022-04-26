@@ -90,7 +90,7 @@ jobs:
       before_install: python3 --version; pip3 --version; sw_vers
       install:
         - python3 -m pip install --upgrade pip
-        - pip install -e .[dev]
+        - pip install -e .[dev] --user
           #<<: *shared_install
           #<<: *shared_script
         #- stage: Unit Tests
