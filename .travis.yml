@@ -88,8 +88,11 @@ jobs:
       osx_image: xcode13.3
       language: shell
       before_install: python3 --version; pip3 --version; sw_vers
-      <<: *shared_install
-      <<: *shared_script
+      install:
+        - python3 -m pip install --upgrade pip
+        - pip install -e .[dev]
+          #<<: *shared_install
+          #<<: *shared_script
         #- stage: Unit Tests
         #  name: Unit Tests - macOS - Python3.9
         #  env:
