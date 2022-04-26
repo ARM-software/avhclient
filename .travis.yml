@@ -6,7 +6,7 @@ env:
   global:
     - PYTHON_VERSION: 3.8
 
-if: (type = push AND branch = main)
+#if: (type = push AND branch = main)
 
 stages:
   - Build
