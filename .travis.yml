@@ -17,7 +17,7 @@ stages:
   - name: Release
     if: tag ~= ^v*
 
-# Unit tests jobs common `install` and `script` phase
+# Unit tests jobs common `install` and `script` step
 _shared_install: &shared_script
 install:
     - python -m pip install --upgrade pip
