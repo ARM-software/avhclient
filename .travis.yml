@@ -13,7 +13,7 @@ stages:
   - Lint
   - Unit Tests
   - name: CodeQL
-    if: branchs = master 
+    if: branch = master 
   - name: Release
     if: tag ~= ^v*
 
