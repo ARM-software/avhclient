@@ -36,6 +36,7 @@ setup(
     ],
     extras_require={
         'dev': [
+            'codecov'
             'coverage~=6.2',
             'python-dateutil~=2.8',
             'pylint~=2.11',
