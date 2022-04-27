@@ -6,14 +6,14 @@ env:
   global:
     - PYTHON_VERSION: 3.8
 
-#if: (type = push AND branch = main)
+if: (type = push AND branch = master)
 
 stages:
   - Build
   - Lint
   - Unit Tests
   - name: CodeQL
-    if: branchs = main
+    if: branchs = master 
   - name: Release
     if: tag ~= ^v*
 
