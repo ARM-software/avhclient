@@ -103,7 +103,7 @@ class AwsBackend(AvhBackend):
     @property
     def instance_type(self) -> str:
         """Amazon EC2 instance type (AWS_INSTANCE_TYPE)."""
-        return self._instance_type or os.environ.get('AWS_INSTANCE_TYPE', 't2.micro')
+        return self._instance_type or os.environ.get('AWS_INSTANCE_TYPE', 'c5.large')
 
     @instance_type.setter
     def instance_type(self, value: str):
