@@ -110,8 +110,15 @@ class AvhClient:
             logging.error(f"{self.backend_desc} not supported!")
             raise RuntimeError()
 
-    def prepare(self) -> AvhBackendState:
-        """Prepare the backend to execute AVH workload."""
+    def prepare(self, force: bool = False) -> AvhBackendState:
+        """Prepare the backend to execute AVH workload.
+
+        Args:
+            force: Force (re)preparation of the backend.
+
+        Returns:
+            The BackendState the backend was in before preparation.
+        """
         return self.backend.prepare()
 
     def upload(self, workspace: Path = Path(""), patterns: List[str] = None):
