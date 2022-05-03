@@ -1,0 +1,10 @@
+FROM python:3.10.4-alpine3.15
+
+RUN apk upgrade --no-cache && \
+    apk add --no-cache git wget curl
+
+ARG GIT_VERSION=main
+RUN python3 -m pip install -U --no-cache-dir pip && \
+    python3 -m pip install -U --no-cache-dir git+https://github.com/ARM-software/avhclient.git@$GIT_VERSION
+
+CMD ["bash"]

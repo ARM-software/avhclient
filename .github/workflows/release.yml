@@ -4,6 +4,7 @@ on:
     types: [published]
   push:
     tags: ['v*']
+
 jobs:
   update:
     name: Update release branches
@@ -31,24 +32,29 @@ jobs:
     runs-on: 'ubuntu-latest'
     steps:
       - uses: actions/checkout@v2
+
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
           python-version: '3.8'
+
       - name: Install setup dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -U setuptools twine wheel
+
       - name: Build distribution
         run: |
           python setup.py sdist bdist_wheel
           twine check dist/*
+
       - name: Upload to PyPI
         if: ${{ github.event_name == 'release' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
+
       - name: Upload to Test PyPI
         if: ${{ github.event_name == 'push' }}
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -57,3 +63,48 @@ jobs:
           user: __token__
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           verbose: true
+
+  docker:
+    name: Build Docker image
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 15
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+      
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Retrieve version
+        id: version
+        run: |
+          echo "::set-output name=docker_tag::$(python -m setup -V)"
+          echo "::set-output name=docker_tag_minor::$(python -m setup -V | cut -d. -f1-2)"
+          echo "::set-output name=docker_tag_major::$(python -m setup -V | cut -d. -f1)"
+      
+      - name: docker build
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/build-push-action@v2
+        with:
+          context: docker
+          build-args: "GIT_VERSION=${{ github.ref_name }}"
+          push: true
+          tags: ghcr.io/arm-software/avhclient:${{ steps.version.outputs.docker_tag }}
+      
+      - name: docker push
+        if: ${{ github.event_name == 'release' }}
+        uses: akhilerm/tag-push-action@v2.0.0
+        with:
+          src: ghcr.io/arm-software/avhclient:${{ steps.version.outputs.docker_tag }}
+          dst: |
+            ghcr.io/arm-software/avhclient:${{ steps.version.outputs.docker_tag_major }}
+            ghcr.io/arm-software/avhclient:${{ steps.version.outputs.docker_tag_minor }}
+            ghcr.io/arm-software/avhclient:latest
