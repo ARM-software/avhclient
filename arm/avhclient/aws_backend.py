@@ -483,7 +483,7 @@ class AwsBackend(AvhBackend):
         if not versions:
             logging.error("aws:get_vht_ami_id_by_version:No AMI found matching version spec %s", self.ami_version)
             logging.error("aws:get_vht_ami_id_by_version:Available AMI versions %s",
-                          sorted([str(k) for k, v in images], reverse=True))
+                          sorted([str(k) for k, v in images.items()], reverse=True))
             raise RuntimeError()
 
         self.ami_id = images[versions[0]]
@@ -709,10 +709,10 @@ class AwsBackend(AvhBackend):
         self.create_instance()
         return AvhBackendState.CREATED
 
-    def prepare(self) -> AvhBackendState:
+    def prepare(self, force: bool = False) -> AvhBackendState:
         self._init()
         state = self.create_or_start_instance()
-        if state == AvhBackendState.CREATED:
+        if state == AvhBackendState.CREATED or force:
             logging.info("aws:Setting up the instance...")
             commands = [
                 f"runuser -l ubuntu -c 'cat ~/.bashrc | grep export > {self.AMI_WORKDIR}/vars'",

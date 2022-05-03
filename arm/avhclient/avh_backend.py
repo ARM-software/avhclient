@@ -55,11 +55,14 @@ class AvhBackend:
         """
         raise NotImplementedError()
 
-    def prepare(self) -> AvhBackendState:
+    def prepare(self, force: bool = False) -> AvhBackendState:
         """Runs required commands to prepare the backend for AVH workload.
 
+        Params:
+            force: Force preparation on already prepared backends.
+
         Returns:
-            The BackendState the backend was is before.
+            The BackendState the backend was in before preparation.
          """
         raise NotImplementedError()
 
@@ -68,7 +71,7 @@ class AvhBackend:
         The backend is brought back into state before call to prepare.
 
         Params:
-            state - The state returned by prepare
+            state: The state returned by prepare
         """
         raise NotImplementedError()
 
@@ -76,7 +79,7 @@ class AvhBackend:
         """Upload the workspace content from the given tarball.
 
         Params:
-            filename - The archived workspace.
+            filename: The archived workspace.
         """
         raise NotImplementedError()
 
@@ -84,7 +87,7 @@ class AvhBackend:
         """Download the workspace content into given tarball.
 
         Params:
-            filename - The archived workspace.
+            filename: The archived workspace.
         """
         raise NotImplementedError()
 
