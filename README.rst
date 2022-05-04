@@ -47,9 +47,20 @@ Other environments can be supported using demonstrated concepts as well.
 Installation
 ------------
 
+Local installation
+##################
+
 Installing (development snapshot) directly from GitHub `main` branch::
 
     pip install git+https://github.com/ARM-software/avhclient.git@main
+    
+Docker container
+################
+
+Instead of installing Python and the AVH Client module into the local environment one
+can use pre-built Docker images::
+
+   docker pull ghcr.io/arm-software/avhclient
 
 ****
 
@@ -145,14 +156,14 @@ Execute command
 ###############
 
 * Create a new AWS AVH instance and run AVH project
-    The `execute` command bundles all necessary steps to build your
+    The ``execute`` command bundles all necessary steps to build your
     avh project:
 
-    * prepare the backend.
-    * upload your files
-    * run your commands
-    * download the results
-    * cleanup the backend
+    * ``prepare`` the backend.
+    * ``upload`` your files
+    * ``run`` your commands
+    * ``download`` the results
+    * ``cleanup`` the backend
 
     Inform the path for the `avh.yml` file for your AVH project (example)::
 
@@ -168,6 +179,34 @@ Execute command
         avhclient -b aws --instance-name MY_NEW_NAME execute --specfile AVH-GetStarted/basic/avh.yml (seeting a new AVH instance name)
         avhclient -b aws --ami-version 1.1.0 --specfile AVH-GetStarted/basic/avh.yml (Create a new AVH instance from a v1.1.0 AVH AMI)
         avhclient -b aws --ami-version >1.1.0 --specfile AVH-GetStarted/basic/avh.yml (Create a new AVH instance from a >v1.1.0 AVH AMI)
+
+Execute with Docker
+###################
+
+To run avhclient in a Docker container one needs to create an environment file
+(``env.txt``) with the following content::
+
+    AWS_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY
+    AWS_IAM_PROFILE
+    AWS_SECURITY_GROUP_ID
+    AWS_SUBNET_ID
+    AWS_S3_BUCKET_NAME
+    AWS_DEFAULT_REGION
+    AWS_AMI_ID
+    AWS_AMI_VERSION
+    AWS_KEEP_EC2_INSTANCES
+    AWS_KEY_NAME
+    AWS_INSTANCE_TYPE
+    AWS_INSTANCE_NAME
+
+This environment file is used to forward the local environment variables into
+the Docker container. Having this prepared one can run ``avhclient`` in a
+container as follows::
+
+    docker run --rm -i --env-file ./env.txt -v $(pwd):/workspace -w /workspace ghcr.io/arm-software/avhclient avhclient [..]
+
+The arguments are the same as above.
 
 ****
 
