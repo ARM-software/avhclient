@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1
 FROM python:3.10.4-alpine3.15
 
+LABEL org.opencontainers.image.source="https://github.com/ARM-software/avhclient"
+LABEL org.opencontainers.image.base.name="python:3.10.4-alpine3.15"
+
 RUN apk upgrade --no-cache && \
     apk add --no-cache git wget curl
 

@@ -107,7 +107,9 @@ jobs:
           build-args: "GIT_VERSION=${{ github.ref_name }}"
           push: true
           tags: ghcr.io/arm-software/avhclient:${{ github.ref_name }}
-          labels: "version=${{ github.ref_name }}"
+          labels: |
+            org.opencontainers.image.version="${{ steps.version.outputs.label }}"
+            org.opencontainers.image.revision="${{ github.sha }}"
       
       - name: docker push
         if: ${{ github.event_name == 'release' }}

@@ -57,7 +57,10 @@ jobs:
           build-args: "GIT_VERSION=${{ github.sha }}"
           push: true
           tags: ghcr.io/arm-software/avhclient:${{ steps.version.outputs.tag }}
-          labels: "version=${{ steps.version.outputs.label }}"
+          labels: |
+            org.opencontainers.image.version="${{ steps.version.outputs.label }}"
+            org.opencontainers.image.revision="${{ github.sha }}"
+            
           
   test:
     name: Test Docker image
