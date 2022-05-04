@@ -5,7 +5,7 @@ on:
   pull_request:
     paths:
       - 'docker/**/*'
-jobs:
+jobs:       
   lint:
     name: Run Hadolint checks
     runs-on: ubuntu-latest
@@ -42,12 +42,41 @@ jobs:
         id: version
         run: |
           echo "::set-output name=label::$(python -m setup -V)"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "::set-output name=tag::run${{ github.run_id }}"
+          else
+            echo "::set-output name=tag::${{ github.ref_name }}"
+          fi
 
-      - name: docker build
+      - name: docker build and push
         uses: docker/build-push-action@v2
         with:
           context: docker
           build-args: "GIT_VERSION=${{ github.sha }}"
-          push: ${{ github.event_name == 'push' }}
-          tags: ghcr.io/arm-software/avhclient:main
+          push: true
+          tags: ghcr.io/arm-software/avhclient:${{ steps.version.outputs.tag }}
           labels: "version=${{ steps.version.outputs.label }}"
+          
+  test:
+    name: Test Docker image
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    container: ghcr.io/arm-software/avhclient:run${{ github.run_id }}
+    needs: build
+    timeout-minutes: 15
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
+      AWS_IAM_PROFILE: ${{ secrets.AWS_IAM_PROFILE }}
+      AWS_SECURITY_GROUP_ID: ${{ secrets.AWS_SECURITY_GROUP_ID }}
+      AWS_SUBNET_ID: ${{ secrets.AWS_SUBNET_ID }}    
+    steps:
+      - run: |
+          rc=0
+          name="${{ github.repository }}-${{ github.run_id }}"
+          avhclient --instance-name ${name} prepare
+          avhclient --instance-name ${name} run --cmds "~/tool-inventory.sh"; rc=$?
+          avhclient --instance-name ${name} cleanup
+          exit $rc
