@@ -8,13 +8,14 @@ on:
 jobs:
   update:
     name: Update release branches
-    if: ${{ github.event_name == 'push' }}
     runs-on: 'ubuntu-latest'
     steps:
       - uses: actions/checkout@v2
+        if: ${{ github.event_name == 'release' }}
         with:
           fetch-depth: 0
-      - run: |
+      - if: ${{ github.event_name == 'release' }}
+        run: |
           minor=$(echo "${github.ref_name}" | cut -d. -f1-2)
           major=$(echo "${github.ref_name}" | cut -d. -f1)
           if (! git rev-parse --verify origin/${minor}) || (git merge-base --is-ancestor origin/${minor} ${github.ref_name}); then
@@ -66,6 +67,7 @@ jobs:
 
   docker:
     name: Build Docker image
+    needs: update
     runs-on: 'ubuntu-latest'
     timeout-minutes: 15
     steps:
@@ -83,12 +85,19 @@ jobs:
         with:
           fetch-depth: 0
           
-      - name: Retrieve version
-        id: version
+      - name: Retrieve additional git refs
+        if: ${{ github.event_name == 'release' }}
+        id: git
         run: |
-          echo "::set-output name=docker_tag::$(python -m setup -V)"
-          echo "::set-output name=docker_tag_minor::$(python -m setup -V | cut -d. -f1-2)"
-          echo "::set-output name=docker_tag_major::$(python -m setup -V | cut -d. -f1)"
+          refs=$(git show-ref |\
+                 grep $(git rev-parse ${{ github.ref_name }}^{}) |\
+                 egrep 'refs/remotes/origin/(v|latest)' |\
+                 cut -d\  -f2 |\
+                 sed 's/refs\/remotes\/origin\//ghcr.io\/arm-software\/avhclient:/')
+          refs="${refs//'%'/'%25'}"
+          refs="${refs//$'\n'/'%0A'}"
+          refs="${refs//$'\r'/'%0D'}"
+          echo "::set-output name=refs::${refs}"
       
       - name: docker build
         if: ${{ github.event_name == 'push' }}
@@ -97,14 +106,12 @@ jobs:
           context: docker
           build-args: "GIT_VERSION=${{ github.ref_name }}"
           push: true
-          tags: ghcr.io/arm-software/avhclient:${{ steps.version.outputs.docker_tag }}
+          tags: ghcr.io/arm-software/avhclient:${{ github.ref_name }}
+          labels: "version=${{ github.ref_name }}"
       
       - name: docker push
         if: ${{ github.event_name == 'release' }}
         uses: akhilerm/tag-push-action@v2.0.0
         with:
           src: ghcr.io/arm-software/avhclient:${{ steps.version.outputs.docker_tag }}
-          dst: |
-            ghcr.io/arm-software/avhclient:${{ steps.version.outputs.docker_tag_major }}
-            ghcr.io/arm-software/avhclient:${{ steps.version.outputs.docker_tag_minor }}
-            ghcr.io/arm-software/avhclient:latest
+          dst: ${{ steps.version.outputs.refs }}

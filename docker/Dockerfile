@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM python:3.10.4-alpine3.15
 
 RUN apk upgrade --no-cache && \
