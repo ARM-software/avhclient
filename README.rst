@@ -204,9 +204,24 @@ This environment file is used to forward the local environment variables into
 the Docker container. Having this prepared one can run ``avhclient`` in a
 container as follows::
 
-    docker run --rm -i --env-file ./env.txt -v $(pwd):/workspace -w /workspace ghcr.io/arm-software/avhclient avhclient [..]
+    docker run --rm -i --env-file ./env.txt \
+        -v $(pwd):/workspace \
+        -w /workspace \
+        ghcr.io/arm-software/avhclient \
+        avhclient [..]
 
-The arguments are the same as above.
+The arguments are the same as above. If one requires more files from the Docker
+host to be mapped into the container, this can be done like::
+
+    docker run --rm -i --env-file ./env.txt \
+        -v $HOME/.ssh:/root/.ssh \
+        -v $HOME/.aws:/root/.aws \
+        -v $(pwd):/workspace \
+        -w /workspace \
+        ghcr.io/arm-software/avhclient \
+        avhclient [..]
+
+This exposes the local user's SSH and AWS config files to the container.
 
 ****
 
