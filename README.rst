@@ -110,9 +110,9 @@ In order for avhclient to create or access an AVH instance following parameters 
         export AWS_INSTANCE_TYPE=t2.micro
         export AWS_INSTANCE_NAME=MY_AVH_INSTANCE
 
-    In case ``AWS_AMI_VERSION`` is not set, the avhclient will use the latest available version of AVH AMI.
-    In case ``AWS_EFS_DNS_NAME`` is set, the AVH Client will try to mount it during on the cloud-init phase. The only scenario supported for now is with Packs.
-    In case ``AWS_EFS_PACKS_DIR`` path is relative to ``/home/ubuntu`` folder. Default folder is `packs` and if it exists locally will be replaced by the EFS mount. Only used when ``AWS_EFS_DNS_NAME`` env is set.
+    * If ``AWS_AMI_VERSION`` is not set, the avhclient will use the latest available version of AVH AMI.
+    * If ``AWS_EFS_DNS_NAME`` is set, the AVH Client will try to mount it during the cloud-init phase. The only scenario supported for now is using Packs.
+    * If ``AWS_EFS_PACKS_DIR`` is set, the mount path is relative to ``/home/ubuntu`` folder. Default folder is `packs` and if it exists locally will be then replaced by the EFS mount. Only used when ``AWS_EFS_DNS_NAME`` env is set.
 
     AWS Cloudformation can be used to create the AWS resources required for AVH operation, as shown `in this template <https://github.com/ARM-software/AVH-GetStarted/tree/main/infrastructure/cloudformation>`_
 
