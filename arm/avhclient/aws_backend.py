@@ -320,9 +320,15 @@ class AwsBackend(AvhBackend):
             InstanceType=self.instance_type,
             MaxCount=1,
             MinCount=1,
+            NetworkInterfaces=[{
+                'AssociatePublicIpAddress': True,
+                'DeleteOnTermination': True,
+                'Description':'AVH Network Instance',
+                'DeviceIndex': 0,
+                'Groups': [self.security_group_id],
+                'SubnetId': self.subnet_id
+            }],
             KeyName=self.key_name,
-            SecurityGroupIds=[self.security_group_id],
-            SubnetId=self.subnet_id,
             TagSpecifications=[{'ResourceType': 'instance', 'Tags': [
                 {'Key': 'Name', 'Value': self.instance_name},
                 {'Key': 'AVH_CLI', 'Value': 'true'}
