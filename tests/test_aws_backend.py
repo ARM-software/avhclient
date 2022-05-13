@@ -322,6 +322,28 @@ class TestAwsBackend(TestCase):
         aws_client = self.get_avh_aws_instance()
         self.assertEqual(aws_client.default_region, "eu-central-1")
 
+    def test_efs_dns_name(self):
+        """Default value from the module"""
+        aws_client = self.get_avh_aws_instance()
+        self.assertEqual(aws_client.efs_dns_name, '')
+
+    @patch.dict(os.environ, {"AWS_EFS_DNS_NAME":"fs-066cf410af2428e2f.efs.eu-west-1.amazonaws.com"})
+    def test_efs_dns_name_env_var(self):
+        """Getting the EFS DNS Name from env var"""
+        aws_client = self.get_avh_aws_instance()
+        self.assertEqual(aws_client.efs_dns_name, "fs-066cf410af2428e2f.efs.eu-west-1.amazonaws.com")
+
+    def test_efs_packs_dir(self):
+        """Default value from the module"""
+        aws_client = self.get_avh_aws_instance()
+        self.assertEqual(aws_client.efs_packs_dir, 'packs')
+
+    @patch.dict(os.environ, {"AWS_EFS_PACK_DIR":"efs_packs"})
+    def test_efs_packs_dir_env_var(self):
+        """Getting the EFS Packs Folder from env var"""
+        aws_client = self.get_avh_aws_instance()
+        self.assertEqual(aws_client.efs_packs_dir, "efs_packs")
+
     def test_delete_file_from_cloud(self):
         aws_client = self.get_avh_aws_instance()
 
