@@ -74,6 +74,24 @@ class AwsBackend(AvhBackend):
         self._default_region = value
 
     @property
+    def efs_dns_name(self) -> str:
+        """AWS EFS DNS Name e.g. fs-086c927c9d324a69f.efs.eu-west-1.amazonaws.com"""
+        return self._efs_dns_name or os.environ.get('AWS_EFS_DNS_NAME', '')
+
+    @efs_dns_name.setter
+    def efs_dns_name(self, value: str):
+        self._efs_dns_name = value
+
+    @property
+    def efs_packs_dir(self) -> str:
+        """AWS EFS Packs Folder e.g. packs. Default: packs"""
+        return self._efs_packs_dir or os.environ.get('AWS_EFS_PACK_DIR', 'packs')
+
+    @efs_packs_dir.setter
+    def efs_packs_dir(self, value: str):
+        self._efs_packs_dir = value
+
+    @property
     def iam_profile(self) -> str:
         """Amazon IAM profile (AWS_IAM_PROFILE)."""
         return self._iam_profile or os.environ.get('AWS_IAM_PROFILE', '')
@@ -167,6 +185,8 @@ class AwsBackend(AvhBackend):
         self._ami_id = None
         self._ami_version = None
         self._default_region = None
+        self._efs_dns_name = None
+        self._efs_packs_dir = None
         self._iam_profile = None
         self._instance_name = None
         self._instance_id = None
@@ -183,6 +203,8 @@ class AwsBackend(AvhBackend):
             f"ami_id={self.ami_id},"
             f"ami_version={self.ami_version},"
             f"default_region={self.default_region},"
+            f"efs_dns_name={self.efs_dns_name},"
+            f"efs_packs_dir={self.efs_packs_dir},"
             f"iam_profile={self.iam_profile},"
             f"instance_name={self.instance_name},"
             f"instance_id={self.instance_id},"
@@ -233,6 +255,35 @@ class AwsBackend(AvhBackend):
         if not self._check_env('AWS_SESSION_TOKEN'):
             logging.debug('aws:It is expected for an IAM User')
 
+    def _get_efs_packs_user_data(self) -> str:
+        """
+        Return the user data to mount the EFS packs in the EC2 instace
+        This is run in the EC2 cloud-init phase.
+        """
+        return ("#cloud-config\n"
+            "package_update: false\n"
+            "package_upgrade: false\n"
+            "runcmd:\n"
+            "- ubuntu_folder=/home/ubuntu\n"
+            "- efs_mount_point_1=/mnt/efs/fs1\n"
+            f"- file_system_id_1={self.efs_dns_name.split('.')[0]}\n"
+            f"- efs_dns_name={self.efs_dns_name}\n"
+            f"- pack_folder={self.efs_packs_dir}\n"
+            "- yum install -y amazon-efs-utils\n"
+            "- apt-get -y install amazon-efs-utils\n"
+            "- yum install -y nfs-utils\n"
+            "- apt-get -y install nfs-common\n"
+            "- mkdir -p \"${efs_mount_point_1}\"\n"
+            "- test -f \"/sbin/mount.efs\" && printf \"\\n${file_system_id_1}:/ ${efs_mount_point_1} efs tls,_netdev\\n\" >> /etc/fstab || printf \"\\n${efs_dns_name}:/ ${efs_mount_point_1} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0\\n\" >> /etc/fstab\n"
+            "- test -f \"/sbin/mount.efs\" && grep -ozP 'client-info]\\nsource' '/etc/amazon/efs/efs-utils.conf'; if [[ $? == 1 ]]; then printf \"\\n[client-info]\\nsource=liw\\n\" >> /etc/amazon/efs/efs-utils.conf; fi;\n"
+            "- retryCnt=15; waitTime=30; while true; do mount -a -t efs,nfs4 defaults; if [ $? = 0 ] || [ $retryCnt -lt 1 ]; then echo File system mounted successfully; break; fi; echo File system not available, retrying to mount.; ((retryCnt--)); sleep $waitTime; done;\n"
+            "- rm -rf \"${ubuntu_folder}/${pack_folder}\"\n"
+            "- mkdir -p \"${ubuntu_folder}/${pack_folder}\"\n"
+            "- chown -R ubuntu:ubuntu \"${ubuntu_folder}/${pack_folder}\"\n"
+            "- mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${efs_dns_name}:/${pack_folder} ${ubuntu_folder}/${pack_folder}\n"
+            "- printf \"\\n${efs_dns_name}:/${pack_folder} ${ubuntu_folder}/${pack_folder} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0\\n\" >> /etc/fstab\n"
+        )
+
     def _setup(self):
         """
             Setup AWS object by collecting env vars & preparing AWS instance
@@ -269,6 +320,10 @@ class AwsBackend(AvhBackend):
         if not self.s3_bucket_name:
             logging.error("aws:environment variable `AWS_S3_BUCKET_NAME` needs to be present!")
             raise RuntimeError("aws:environment variable `AWS_S3_BUCKET_NAME` needs to be present!")
+
+        if self.efs_dns_name:
+            logging.info("aws:EFS DNS %s is going to be mounted", self.efs_dns_name)
+            logging.info("aws:Local packs directory will be replace by EFS packs folder named %s", self.efs_packs_dir)
 
         logging.debug("aws:aws__repr__:%s", self.__repr__())
         logging.info("aws:Backend successfully initialized!")
@@ -333,6 +388,7 @@ class AwsBackend(AvhBackend):
                 {'Key': 'Name', 'Value': self.instance_name},
                 {'Key': 'AVH_CLI', 'Value': 'true'}
             ]}],
+            UserData=self._get_efs_packs_user_data() if self.efs_dns_name != '' else '',
             IamInstanceProfile={'Name': self.iam_profile}
         )
 
@@ -489,7 +545,7 @@ class AwsBackend(AvhBackend):
         if not versions:
             logging.error("aws:get_vht_ami_id_by_version:No AMI found matching version spec %s", self.ami_version)
             logging.error("aws:get_vht_ami_id_by_version:Available AMI versions %s",
-                          sorted([str(k) for k, v in images], reverse=True))
+                          sorted([str(k) for k, v in images.items()], reverse=True))
             raise RuntimeError()
 
         self.ami_id = images[versions[0]]
@@ -715,10 +771,10 @@ class AwsBackend(AvhBackend):
         self.create_instance()
         return AvhBackendState.CREATED
 
-    def prepare(self) -> AvhBackendState:
+    def prepare(self, force: bool = False) -> AvhBackendState:
         self._init()
         state = self.create_or_start_instance()
-        if state == AvhBackendState.CREATED:
+        if state == AvhBackendState.CREATED or force:
             logging.info("aws:Setting up the instance...")
             commands = [
                 f"runuser -l ubuntu -c 'cat ~/.bashrc | grep export > {self.AMI_WORKDIR}/vars'",

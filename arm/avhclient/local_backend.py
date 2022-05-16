@@ -56,7 +56,7 @@ class LocalBackend(AvhBackend):
         self._workid = ''
         self._workdir = None
 
-    def prepare(self) -> AvhBackendState:
+    def prepare(self, force: bool = False) -> AvhBackendState:
         if not self.workdir.exists():
             logging.info("Creating %s", self.workdir)
             self.workdir.mkdir()

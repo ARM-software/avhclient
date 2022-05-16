@@ -36,8 +36,8 @@ class MockBackend(AvhBackend):
         with tarfile.open(filename, mode='r:bz2') as archive:
             self.uploaded = archive.getnames()
 
-    def prepare(self) -> AvhBackendState:
-        return self.mock.prepare()
+    def prepare(self, force: bool = False) -> AvhBackendState:
+        return self.mock.prepare(force)
 
     def cleanup(self, state: AvhBackendState):
         self.mock.cleanup(state)
