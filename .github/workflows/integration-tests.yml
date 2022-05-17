@@ -1,0 +1,57 @@
+name: Integration Tests
+on:
+  pull_request:
+    paths:
+      - '**/*.py'
+      - '!tests/**'
+env:
+  # global envs
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_IAM_PROFILE: ${{ secrets.AWS_IAM_PROFILE }}
+jobs:
+  test_matrix:
+    strategy:
+      matrix:
+        region: [ eu-west-1, us-east-1 ]
+        include:
+          - region: eu-west-1
+            # secret names
+            AWS_S3_BUCKET_NAME: AWS_S3_BUCKET_NAME
+            AWS_SECURITY_GROUP_ID: AWS_SECURITY_GROUP_ID
+            AWS_SUBNET_ID: AWS_SUBNET_ID
+          - region: us-east-1
+            # secret names
+            AWS_S3_BUCKET_NAME: TEST_AWS_S3_BUCKET_NAME
+            AWS_SECURITY_GROUP_ID: TEST_AWS_SECURITY_GROUP_ID
+            AWS_SUBNET_ID: TEST_AWS_SUBNET_ID
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+
+      - name: Checkout AVH-GetStarted example
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          path: AVH-GetStarted
+          ref: main
+          repository: ARM-software/AVH-GetStarted
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+      - name: Install AVH Client
+        run: pip install .
+
+      - name: Run tests
+        id: avh
+        env:
+          AWS_DEFAULT_REGION: ${{ matrix.region }}
+          AWS_S3_BUCKET_NAME: ${{ secrets[matrix.AWS_S3_BUCKET_NAME] }}
+          AWS_SECURITY_GROUP_ID: ${{ secrets[matrix.AWS_SECURITY_GROUP_ID] }}
+          AWS_SUBNET_ID: ${{ secrets[matrix.AWS_SUBNET_ID] }}
+        run: |
+          avhclient -b aws execute --specfile AVH-GetStarted/basic/avh.yml
