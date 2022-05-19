@@ -371,6 +371,16 @@ class AwsBackend(AvhBackend):
         """
         self._init()
         self.instance_id = self.create_ec2_instance(
+            BlockDeviceMappings=[{
+                'DeviceName': '/dev/sda1',
+                'Ebs': {
+                    'DeleteOnTermination': True,
+                    'Iops': 3000,
+                    'VolumeType': 'gp3',
+                    'Throughput': 150,
+                    'Encrypted': False
+                }
+            }],
             ImageId=self.ami_id,
             InstanceType=self.instance_type,
             MaxCount=1,
