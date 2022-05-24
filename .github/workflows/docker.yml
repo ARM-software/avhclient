@@ -6,7 +6,7 @@ on:
     types: [opened, synchronize, reopened, closed]
     paths:
       - 'docker/**/*'
-jobs:       
+jobs:
   lint:
     name: Run Hadolint checks
     if: ${{ github.event.pull_request.type != 'closed' }}
@@ -17,9 +17,9 @@ jobs:
 
       - uses: hadolint/hadolint-action@v2.1.0
         with:
-          dockerfile: docker/Dockerfile      
+          dockerfile: docker/Dockerfile
           config: docker/.hadolint.yaml
-      
+
   build:
     name: Build Docker image
     if: ${{ github.event.pull_request.type != 'closed' }}
@@ -60,8 +60,15 @@ jobs:
           labels: |
             org.opencontainers.image.version="${{ steps.version.outputs.label }}"
             org.opencontainers.image.revision="${{ github.sha }}"
-            
-          
+
+      - name: Inspect image
+        run: docker run --rm ghcr.io/arm-software/avhclient:${{ steps.version.outputs.tag }} apk list -I | tee LICENSES.txt
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: LICENSES
+          path: LICENSES.txt
+
   test:
     name: Test Docker image
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.type != 'closed' }}
@@ -76,7 +83,7 @@ jobs:
       AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
       AWS_IAM_PROFILE: ${{ secrets.AWS_IAM_PROFILE }}
       AWS_SECURITY_GROUP_ID: ${{ secrets.AWS_SECURITY_GROUP_ID }}
-      AWS_SUBNET_ID: ${{ secrets.AWS_SUBNET_ID }}    
+      AWS_SUBNET_ID: ${{ secrets.AWS_SUBNET_ID }}
     steps:
       - run: |
           rc=0
@@ -85,7 +92,7 @@ jobs:
           avhclient --instance-name ${name} run --cmds "~/tool-inventory.sh"; rc=$?
           avhclient --instance-name ${name} cleanup
           exit $rc
-  
+
   prune:
     name: Prune Docker image
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.type == 'closed' }}
