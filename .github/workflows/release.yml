@@ -17,15 +17,15 @@ jobs:
           minor=$(echo "${{ github.ref_name }}" | cut -d. -f1-2)
           major=$(echo "${{ github.ref_name }}" | cut -d. -f1)
           if (! git rev-parse --verify origin/${minor}) || (git merge-base --is-ancestor origin/${minor} ${{ github.ref_name }}); then
-            git push origin ${{ github.ref_name }}:${minor} 
+            git push origin ${{ github.ref_name }}^{commit}:refs/heads/${minor}
           fi
           if (! git rev-parse --verify origin/${major}) || (git merge-base --is-ancestor origin/${major} ${{ github.ref_name }}); then
-            git push origin ${{ github.ref_name }}:${major} 
+            git push origin ${{ github.ref_name }}^{commit}:refs/heads/${major}
           fi
           if (! git rev-parse --verify origin/latest) || (git merge-base --is-ancestor origin/latest ${{ github.ref_name }}); then
-            git push origin ${{ github.ref_name }}:latest
+            git push origin ${{ github.ref_name }}^{commit}:refs/heads/latest
           fi
-          
+
   publish:
     name: Publish to PyPI
     runs-on: 'ubuntu-latest'
