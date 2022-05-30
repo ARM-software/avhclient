@@ -14,16 +14,16 @@ jobs:
         with:
           fetch-depth: 0
       - run: |
-          minor=$(echo "${{ github.ref_name}}" | cut -d. -f1-2)
-          major=$(echo "${{ github.ref_name}}" | cut -d. -f1)
-          if (! git rev-parse --verify origin/${minor}) || (git merge-base --is-ancestor origin/${minor} ${{ github.ref_name}}); then
-            git push origin ${{ github.ref_name}}:${minor} 
+          minor=$(echo "${{ github.ref_name }}" | cut -d. -f1-2)
+          major=$(echo "${{ github.ref_name }}" | cut -d. -f1)
+          if (! git rev-parse --verify origin/${minor}) || (git merge-base --is-ancestor origin/${minor} ${{ github.ref_name }}); then
+            git push origin ${{ github.ref_name }}:${minor} 
           fi
-          if (! git rev-parse --verify origin/${major}) || (git merge-base --is-ancestor origin/${major} ${{ github.ref_name}}); then
-            git push origin ${{ github.ref_name}}:${major} 
+          if (! git rev-parse --verify origin/${major}) || (git merge-base --is-ancestor origin/${major} ${{ github.ref_name }}); then
+            git push origin ${{ github.ref_name }}:${major} 
           fi
-          if (! git rev-parse --verify origin/latest) || (git merge-base --is-ancestor origin/latest ${{ github.ref_name}}); then
-            git push origin ${{ github.ref_name}}:latest
+          if (! git rev-parse --verify origin/latest) || (git merge-base --is-ancestor origin/latest ${{ github.ref_name }}); then
+            git push origin ${{ github.ref_name }}:latest
           fi
           
   publish:
