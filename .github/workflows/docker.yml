@@ -108,3 +108,4 @@ jobs:
           name: arm-software/avhclient
           token: ${{ github.token }}
           tag: pr-${{github.event.pull_request.number}}
+          untagged-older-than: 1
