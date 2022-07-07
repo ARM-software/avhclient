@@ -97,15 +97,22 @@ jobs:
 
   prune:
     name: Prune Docker image
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Delete image
+      - name: Delete PR image
+        if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
         uses: bots-house/ghcr-delete-image-action@v1.0.1
         with:
           owner: ${{ github.repository_owner }}
           name: arm-software/avhclient
           token: ${{ github.token }}
           tag: pr-${{github.event.pull_request.number}}
+          
+      - name: Delete untagged images
+        uses: bots-house/ghcr-delete-image-action@v1.0.1
+        with:
+          owner: ${{ github.repository_owner }}
+          name: arm-software/avhclient
+          token: ${{ github.token }}
           untagged-older-than: 1
