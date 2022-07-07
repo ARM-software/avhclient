@@ -11,7 +11,7 @@ on:
 jobs:
   lint:
     name: Run Hadolint checks
-    if: ${{ github.event.pull_request.action != 'closed' }}
+    if: ${{ github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -24,7 +24,7 @@ jobs:
 
   build:
     name: Build Docker image
-    if: ${{ github.event.pull_request.action != 'closed' }}
+    if: ${{ github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -73,7 +73,7 @@ jobs:
 
   test:
     name: Test Docker image
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.action != 'closed' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     container: ghcr.io/arm-software/avhclient:pr-${{github.event.pull_request.number}}
     needs: build
@@ -97,7 +97,7 @@ jobs:
 
   prune:
     name: Prune Docker image
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.action == 'closed' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
