@@ -4,6 +4,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
+    branches: [ main ]
     paths:
       - '.github/workflows/codeql-analysis.yml'
       - '**/*.py'
@@ -39,11 +40,11 @@ jobs:
         echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
+      uses: github/codeql-action/init@v2
       with:
         languages: ${{ matrix.language }}
         setup-python-dependencies: false
         queries: security-and-quality
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      uses: github/codeql-action/analyze@v2
