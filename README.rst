@@ -96,6 +96,7 @@ or create a AWS credential file on `~/.aws/credentials (Linux & Mac)` or `%USERP
     aws_secret_access_key=YOUR_AWS_SECRET_ACCESS_KEY
     aws_session_token=YOUR_AWS_SESSION_TOKEN
 
+The AWS Session Token is not needed when using IAM User credentials.
 More info `AWS CLI config and credentials <https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html>`_
 
 AWS Account info
@@ -107,7 +108,7 @@ In order for avhclient to create or access an AVH instance following parameters 
 
         export AWS_IAM_PROFILE='YOUR_IAM_PROFILE'
         export AWS_SECURITY_GROUP_ID='YOUR_AWS_SECURITY_GROUP_ID'
-        export AWS_SUBNET_ID='YOUR_SECURITY_GROUP_ID'
+        export AWS_SUBNET_ID='YOUR_SUBNET_ID'
         export AWS_S3_BUCKET_NAME='YOUR_B3_BUCKET_NAME'
 
     Optional info (examples)::
