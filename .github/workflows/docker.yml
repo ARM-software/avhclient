@@ -5,6 +5,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
     paths:
+      - '.github/workflows/docker.yml'
+      - 'docker/.hadolint.yaml'
       - 'docker/**/*'
 jobs:
   lint:

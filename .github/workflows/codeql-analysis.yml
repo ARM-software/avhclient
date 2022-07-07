@@ -4,9 +4,9 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    paths-ignore:
-      - '**/*.rst'
-      - '**/*.txt'
+    paths:
+      - '.github/workflows/codeql-analysis.yml'
+      - '**/*.py'
 jobs:
   analyze:
     name: Analyze
