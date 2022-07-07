@@ -16,8 +16,8 @@ jobs:
           fetch-depth: 0
       - if: ${{ github.event_name == 'release' }}
         run: |
-          minor=$(echo "${{ github.ref_name }}" | cut -d. -f1-2)
-          major=$(echo "${{ github.ref_name }}" | cut -d. -f1)
+          minor=$(cut -d. -f1-2 <<< "${{ github.ref_name }}")
+          major=$(cut -d. -f1   <<< "${{ github.ref_name }}")
           if (! git rev-parse --verify origin/${minor}) || (git merge-base --is-ancestor origin/${minor} ${{ github.ref_name }}); then
             git push origin ${{ github.ref_name }}^{commit}:refs/heads/${minor}
           fi
