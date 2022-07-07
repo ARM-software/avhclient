@@ -122,4 +122,4 @@ jobs:
           owner: ${{ github.repository_owner }}
           name: avhclient
           token: ${{ github.token }}
-          untagged-older-than: 1
+          untagged-keep-latest: 1
