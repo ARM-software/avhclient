@@ -106,20 +106,30 @@ jobs:
     timeout-minutes: 5
     if: ${{ always() }}
     needs: build
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
       - name: Delete PR image
         if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
-        uses: bots-house/ghcr-delete-image-action@v1.0.1
-        with:
-          owner: ${{ github.repository_owner }}
-          name: avhclient
-          token: ${{ github.token }}
-          tag: pr-${{github.event.pull_request.number}}
-          
+        run: |
+          ID=$(gh api -H "Accept: application/vnd.github+json" \
+            orgs/${{ github.repository_owner }}/packages/container/avhclient/versions \
+            -q '[ .[] | select(.metadata.container.tags[] | contains("pr-${{ github.event.pull_request.number }}")) ].[].id')
+          echo -n "Deleting container image ${ID} ... "
+          curl -s -X DELETE \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${GH_TOKEN}" \
+            https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/avhclient/versions/${ID} && echo "done." || echo "failed!"
+
       - name: Delete untagged images
-        uses: bots-house/ghcr-delete-image-action@main
-        with:
-          owner: ${{ github.repository_owner }}
-          name: avhclient
-          token: ${{ github.token }}
-          untagged-older-than: 1
+        run: |
+          IDS=$(gh api -H "Accept: application/vnd.github+json" \
+            orgs/${{ github.repository_owner }}/packages/container/avhclient/versions \
+            -q '[ .[] | select(.metadata.container.tags | length==0) ] | .[].id')
+          for ID in $IDS; do
+            echo -n "Deleting container image ${ID} ... "
+            curl -s -X DELETE \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: token ${GH_TOKEN}" \
+              https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/avhclient/versions/${ID} && echo "done." || echo "failed!"
+          done
