@@ -64,12 +64,17 @@ jobs:
             org.opencontainers.image.revision="${{ github.sha }}"
 
       - name: Inspect image
-        run: docker run --rm ghcr.io/arm-software/avhclient:${{ steps.version.outputs.tag }} apk list -I | tee LICENSES.txt
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo sh -s -- -b /usr/local/bin v0.51.0
+          syft --scope all-layers ghcr.io/arm-software/avhclient:${{ steps.version.outputs.tag }} --file docker-content.txt
+          syft --scope all-layers ghcr.io/arm-software/avhclient:${{ steps.version.outputs.tag }} --output spdx-json --file docker-content.json
 
       - uses: actions/upload-artifact@v3
         with:
-          name: LICENSES
-          path: LICENSES.txt
+          name: docker-content
+          path: |
+            docker-content.json
+            docker-content.txt
 
   test:
     name: Test Docker image
@@ -107,7 +112,7 @@ jobs:
         uses: bots-house/ghcr-delete-image-action@v1.0.1
         with:
           owner: ${{ github.repository_owner }}
-          name: arm-software/avhclient
+          name: avhclient
           token: ${{ github.token }}
           tag: pr-${{github.event.pull_request.number}}
           
@@ -115,6 +120,6 @@ jobs:
         uses: bots-house/ghcr-delete-image-action@main
         with:
           owner: ${{ github.repository_owner }}
-          name: arm-software/avhclient
+          name: avhclient
           token: ${{ github.token }}
           untagged-older-than: 1

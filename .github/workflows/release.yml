@@ -119,12 +119,17 @@ jobs:
           dst: ${{ steps.version.outputs.refs }}
 
       - name: Inspect image
-        run: docker run --rm ghcr.io/arm-software/avhclient:${{ github.ref_name }} apk list -I | tee LICENSES.txt
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo sh -s -- -b /usr/local/bin v0.51.0
+          syft --scope all-layers ghcr.io/arm-software/avhclient:${{ steps.version.outputs.tag }} --file docker-content.txt
+          syft --scope all-layers ghcr.io/arm-software/avhclient:${{ steps.version.outputs.tag }} --output spdx-json --file docker-content.json
 
       - uses: actions/upload-artifact@v3
         with:
-          name: LICENSES
-          path: LICENSES.txt
+          name: docker-content
+          path: |
+            docker-content.json
+            docker-content.txt
 
       - name: Attach Docker image license information
         if: ${{ github.event_name == 'release' }}
@@ -133,4 +138,5 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
           overwrite: true
-          file: LICENSES.txt
+          file: docker-content.*
+          file_glob: true
