@@ -1,0 +1,185 @@
+---
+language: python
+python: 3.8
+
+env:
+  global:
+    - PYTHON_VERSION: 3.8
+
+if: (type = push AND branch = master)
+
+stages:
+  - Build
+  - Lint
+  - Unit Tests
+  - name: CodeQL
+    if: branch = master
+  - name: Release
+    if: tag ~= ^v*
+
+# Unit tests jobs common `install` and `script` step
+_shared_install: &shared_install
+install:
+  - python -m pip install --upgrade pip
+  - pip install -e .[dev]
+
+_shared_script: &shared_script
+script:
+  - coverage run --branch -m xmlrunner -o junit discover
+  - coverage xml --include="./arm/avhclient/**"
+
+_ubuntu_latest: &ubuntu_latest
+os: linux
+dist: focal
+
+jobs:
+  include:
+    - stage: Build
+      name: Build Distribution
+      <<: *ubuntu_latest
+      # Install setup dependencies
+      install:
+        - python -m pip install --upgrade pip
+        - pip install -U setuptools twine wheel
+      # Build distribution
+      script:
+        - python setup.py sdist bdist_wheel
+        - twine check dist/*
+    - stage: Lint
+      name: Run PyLint checks
+      <<: *ubuntu_latest
+      # Install dev dependencies
+      install:
+        - python -m pip install --upgrade pip
+        - pip install -e .[dev]
+      # Run pylint
+      script:
+        - echo "::add-matcher::.github/pylint.json"
+        - pylint --exit-zero --rcfile=./pylintrc arm/avhclient tests
+    - stage: Unit Tests
+      name: Unit Tests - Ubuntu - Python3.8
+      env:
+        - AWS_DEFAULT_REGION="eu-west-1"
+      <<: *ubuntu_latest
+      python: 3.8
+      <<: *shared_install
+      <<: *shared_script
+    - stage: Unit Tests
+      name: Unit Tests - Ubuntu - Python3.9
+      env:
+        - AWS_DEFAULT_REGION="eu-west-1"
+      <<: *ubuntu_latest
+      python: 3.9
+      <<: *shared_install
+      <<: *shared_script
+    - stage: Unit Tests
+      name: Unit Tests - Ubuntu - Python3.10
+      env:
+        - AWS_DEFAULT_REGION="eu-west-1"
+      <<: *ubuntu_latest
+      python: 3.10
+      <<: *shared_install
+      <<: *shared_script
+    - stage: Unit Tests
+      name: Unit Tests - macOS - Python3.8
+      env:
+        - AWS_DEFAULT_REGION="eu-west-1"
+      os: osx
+      osx_image: xcode13.3
+      language: shell
+      before_install: python3 --version; pip3 --version; sw_vers
+      install:
+        - python3 -m pip install --upgrade pip
+        - pip3 install codecov
+        - pip install -e .[dev] --user
+          #<<: *shared_install
+          #<<: *shared_script
+        #- stage: Unit Tests
+        #  name: Unit Tests - macOS - Python3.9
+        #  env:
+        #    - AWS_DEFAULT_REGION="eu-west-1"
+        #  os: osx
+        #  osx_image: xcode13.3
+        #  language: shell
+        #  <<: *shared_install
+        #  <<: *shared_script
+        #- stage: Unit Tests
+        #  name: Unit Tests - macOS - Python3.10
+        #  env:
+        #    - AWS_DEFAULT_REGION="eu-west-1"
+        #  os: osx
+        #  osx_image: xcode13.3
+        #  language: shell
+        #  <<: *shared_install
+        #  <<: *shared_script
+    - stage: Unit Tests
+      name: Unit Tests - Windows - Python3.8
+      env:
+        - AWS_DEFAULT_REGION="eu-west-1"
+      os: windows
+      language: shell
+      before_install:
+        - choco install python --version 3.8
+        - export PATH="/c/Python38:/c/Python38/Scripts:$path"
+      <<: *shared_install
+      <<: *shared_script
+    - stage: Unit Tests
+      name: Unit Tests - Windows - Python3.9
+      env:
+        - AWS_DEFAULT_REGION="eu-west-1"
+      os: windows
+      language: shell
+      before_install:
+        - choco install python --version 3.9
+        - export path=/c/python39:/c/python39/scripts:$path
+      <<: *shared_install
+      <<: *shared_script
+    - stage: Unit Tests
+      name: Unit Tests - Windows - Python3.10
+      env:
+        - AWS_DEFAULT_REGION="eu-west-1"
+      os: windows
+      language: shell
+      before_install:
+        - choco install python --version 3.10
+        - export path=/c/python310:/c/python310/scripts:$path
+      <<: *shared_install
+      <<: *shared_script
+
+    - stage: CodeQL
+      name: Analyze
+      <<: *ubuntu_latest
+      language: python
+      python: 3.9
+      install:
+        - python -m pip install --upgrade pip
+        - pip install -e .
+        - echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
+      # For the security analysis we can use SonarCloud as addon:
+      # https://docs.travis-ci.com/user/sonarcloud/
+
+    - stage: Release
+      name: Release
+      <<: *ubuntu_latest
+      language: python
+      python: 3.8
+      install:
+        - python -m pip install --upgrade pip
+        - pip install -U setuptools twine wheel
+      script:
+        - python setup.py sdist bdist_wheel
+        - twine check dist/*
+      deploy:
+        - provider: pypi
+          username: __token__
+          password:
+            secure: "<your_encrypted_token_here>"
+          on:
+            tags: true
+        # For the test PyPI release
+        - provider: pypi
+          username: __token__
+          password:
+            secure: "<your_encrypted_token_here>"
+          on:
+            tags: true

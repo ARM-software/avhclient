@@ -40,7 +40,7 @@ setup(
             'python-dateutil~=2.8',
             'pylint~=2.14',
             'restructuredtext_lint~=1.3',
-            'setuptools~=59.4',
+            'setuptools~=60.7.0',
             'unittest-xml-reporting~=3.0'
         ]
     },
