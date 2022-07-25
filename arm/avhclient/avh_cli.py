@@ -8,6 +8,7 @@
 import inspect
 import logging
 import re
+import signal
 import sys
 
 from argparse import ArgumentParser, SUPPRESS, Namespace
@@ -26,6 +27,10 @@ class AvhCli:
     """Arm Virtual Hardware Command Line Interface"""
 
     def __init__(self):
+        # Register a minimal signal handler to SIGTERM to be notified.
+        # This allows to gracefully cleanup resources on such an event.
+        signal.signal(signal.SIGTERM, lambda *args: sys.exit(1))
+
         parser = self._parser()
 
         args = parser.parse_known_args()[0]

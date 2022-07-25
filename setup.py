@@ -45,7 +45,7 @@ setup(
         ]
     },
     entry_points={
-        'console_scripts': ['avhclient=arm.avhclient.__main__:main']
+        'console_scripts': ['avhclient=arm.avhclient.avh_cli:AvhCli']
     },
     python_requires='>=3.8',
     url='https://github.com/ARM-software/avhclient',
