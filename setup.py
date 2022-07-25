@@ -38,7 +38,7 @@ setup(
         'dev': [
             'coverage~=6.2',
             'python-dateutil~=2.8',
-            'pylint~=2.11',
+            'pylint~=2.14',
             'restructuredtext_lint~=1.3',
             'setuptools~=59.4',
             'unittest-xml-reporting~=3.0'
