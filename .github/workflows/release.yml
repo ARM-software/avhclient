@@ -116,13 +116,13 @@ jobs:
         uses: akhilerm/tag-push-action@v2.0.0
         with:
           src: ghcr.io/arm-software/avhclient:${{ github.ref_name }}
-          dst: ${{ steps.version.outputs.refs }}
+          dst: ${{ steps.git.outputs.refs }}
 
       - name: Inspect image
         run: |
           curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo sh -s -- -b /usr/local/bin v0.51.0
-          syft --scope all-layers ghcr.io/arm-software/avhclient:${{ steps.version.outputs.tag }} --file docker-content.txt
-          syft --scope all-layers ghcr.io/arm-software/avhclient:${{ steps.version.outputs.tag }} --output spdx-json --file docker-content.json
+          syft --scope all-layers ghcr.io/arm-software/avhclient:${{ github.ref_name }} --file docker-content.txt
+          syft --scope all-layers ghcr.io/arm-software/avhclient:${{ github.ref_name }} --output spdx-json --file docker-content.json
 
       - uses: actions/upload-artifact@v3
         with:
