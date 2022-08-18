@@ -790,8 +790,8 @@ class AwsBackend(AvhBackend):
                 f"runuser -l ubuntu -c 'cat ~/.bashrc | grep export > {self.AMI_WORKDIR}/vars'",
                 f"runuser -l ubuntu -c 'mkdir -p {self.AMI_WORKDIR}/packs/.Web'",
                 f"runuser -l ubuntu -c 'wget -N https://www.keil.com/pack/index.pidx -O {self.AMI_WORKDIR}/packs/.Web/index.pidx'",
-                "apt update",
-                "apt install awscli -y"
+                "apt -o DPkg::Lock::Timeout=600 update",
+                "apt -o DPkg::Lock::Timeout=600 install awscli -y"
             ]
             self.send_remote_command_batch(
                 commands,
@@ -1008,7 +1008,7 @@ class AwsBackend(AvhBackend):
             command_list,
             working_dir='/',
             return_type='all',
-            timeout_seconds=600):
+            timeout_seconds=10800):
         """
         Send SSM Shell Commands to a EC2 Instance
 
@@ -1224,7 +1224,7 @@ class AwsBackend(AvhBackend):
         instance = boto3.resource('ec2').Instance(self.instance_id)
         instance.wait_until_terminated()
 
-    def wait_s3_object_exists(self, key, delay=5, max_attempts=120):
+    def wait_s3_object_exists(self, key, delay=5, max_attempts=2160):
         """
         Wait an S3 Object to exists
 
@@ -1262,15 +1262,16 @@ class AwsBackend(AvhBackend):
         else:
             self.terminate_instance()
 
-    def wait_ssm_command_finished(self, command_id, delay=5, max_attempts=120):
+    def wait_ssm_command_finished(self, command_id, delay=5, max_attempts=2160):
         """
         Wait the SSM command to reach a terminal status.
+        Wait time is delay * max_attemps = 10800s (matching with SSM Shell Timeout)
         Parameters
         ----------
         String
             command_id (Command ID)
             delay (Retry delay in seconds - Default: 5)
-            max_attemps (Max retry - Default: 120)
+            max_attemps (Max retry - Default: 2160)
 
         More
         ----------
