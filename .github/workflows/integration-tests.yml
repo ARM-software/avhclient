@@ -6,8 +6,6 @@ on:
       - '!tests/**'
 env:
   # global envs
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_IAM_PROFILE: ${{ secrets.AWS_IAM_PROFILE }}
 jobs:
   test_matrix:
@@ -26,6 +24,9 @@ jobs:
             AWS_SECURITY_GROUP_ID: TEST_AWS_SECURITY_GROUP_ID
             AWS_SUBNET_ID: TEST_AWS_SUBNET_ID
     runs-on: ubuntu-20.04
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
@@ -45,6 +46,12 @@ jobs:
 
       - name: Install AVH Client
         run: pip install .
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::720528183931:role/Proj-vht-assume-role
+          aws-region: ${{ matrix.region }}
 
       - name: Run tests
         id: avh
