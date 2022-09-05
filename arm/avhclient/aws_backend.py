@@ -8,6 +8,7 @@
 import logging
 import os
 import time
+import subprocess
 
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -18,7 +19,6 @@ import boto3
 from botocore.exceptions import ClientError
 from botocore.exceptions import WaiterError
 from semantic_version import Version, SimpleSpec
-
 from .avh_backend import AvhBackend, AvhBackendState
 
 
@@ -284,6 +284,28 @@ class AwsBackend(AvhBackend):
             "- printf \"\\n${efs_dns_name}:/${pack_folder} ${ubuntu_folder}/${pack_folder} nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport,_netdev 0 0\\n\" >> /etc/fstab\n"
         )
 
+    def _get_git_repo_origin_url(self, remote = 'origin'):
+        """
+            Collect the Git repo remote info
+
+            Returns empty string if commands failed.
+        """
+
+        cmd_as_list = f"git config --get remote.{remote}.url".split()
+        try:
+            ret = subprocess.run(
+                cmd_as_list,
+                capture_output=True,
+                check=True,
+                text=True, # return str instead of byte type
+                timeout=60)
+        except subprocess.CalledProcessError as e:
+            logging.warning("aws:_get_git_repo_origin_url: failed")
+            logging.warning("aws:_get_git_repo_origin_url: '%s'", str(e))
+            return ''
+
+        return ret.stdout
+
     def _setup(self):
         """
             Setup AWS object by collecting env vars & preparing AWS instance
@@ -396,7 +418,8 @@ class AwsBackend(AvhBackend):
             KeyName=self.key_name,
             TagSpecifications=[{'ResourceType': 'instance', 'Tags': [
                 {'Key': 'Name', 'Value': self.instance_name},
-                {'Key': 'AVH_CLI', 'Value': 'true'}
+                {'Key': 'AVH_CLI', 'Value': 'true'},
+                {'Key': 'Repo', 'Value': self._get_git_repo_origin_url()}
             ]}],
             UserData=self._get_efs_packs_user_data() if self.efs_dns_name != '' else '',
             IamInstanceProfile={'Name': self.iam_profile}
