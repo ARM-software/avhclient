@@ -4,5 +4,6 @@ __pycache__
 venv
 .coverage
 .vscode
-junit
+build
 coverage.xml
+junit

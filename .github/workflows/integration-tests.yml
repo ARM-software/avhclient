@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - '**/*.py'
+      - pyproject.toml
       - '!tests/**'
 env:
   # global envs

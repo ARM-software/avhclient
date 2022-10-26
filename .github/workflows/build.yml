@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - '**/*.py'
+      - pyproject.toml
 env:
   PYTHON_VERSION: 3.8
 jobs:

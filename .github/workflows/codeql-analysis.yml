@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/codeql-analysis.yml'
       - '**/*.py'
+      - pyproject.toml
 jobs:
   analyze:
     name: Analyze
