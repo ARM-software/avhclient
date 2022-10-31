@@ -39,9 +39,9 @@ setup(
             'coverage~=6.2',
             'python-dateutil~=2.8',
             'pylint~=2.14',
-            'restructuredtext_lint~=1.3',
+            'restructuredtext_lint~=1.4',
             'setuptools~=59.4',
-            'unittest-xml-reporting~=3.0'
+            'unittest-xml-reporting~=3.2'
         ]
     },
     entry_points={
@@ -68,3 +68,4 @@ setup(
         "Topic :: Software Development :: Build Tools"
     ]
 )
+
