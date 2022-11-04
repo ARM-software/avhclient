@@ -1,13 +1,10 @@
 name: Integration Tests
 on:
-  pull_request:
-    paths:
-      - '**/*.py'
-      - pyproject.toml
-      - '!tests/**'
-env:
-  # global envs
-  AWS_IAM_PROFILE: ${{ secrets.AWS_IAM_PROFILE }}
+  workflow_run:
+    workflows:
+      - Build
+    types:
+      - requested
 jobs:
   test_matrix:
     strategy:
@@ -28,9 +25,26 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    env:
+      PR_HEAD_SHA: 0
     steps:
+      - name: Get PR data
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          env
+          pull_requests=${{ github.event.workflow_run.pull_requests }}
+          echo $pull_requests
+          head_sha=gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${GITHUB_REPOSITORY}/pulls/${pull_requests}
+          echo ${head_sha}
+          echo "PR_HEAD_SHA=${head_sha}" >> $GITHUB_ENV
+
       - name: Checkout this repo
         uses: actions/checkout@v3
+        with:
+          ref: "${{ env.PR_HEAD_SHA }}"
 
       - name: Checkout AVH-GetStarted example
         uses: actions/checkout@v3
@@ -48,17 +62,18 @@ jobs:
       - name: Install AVH Client
         run: pip install .
 
-#       - name: Configure AWS Credentials
-#         uses: aws-actions/configure-aws-credentials@master
-#         with:
-#           role-to-assume: arn:aws:iam::720528183931:role/Proj-vht-assume-role
-#           aws-region: ${{ matrix.region }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          role-to-assume: arn:aws:iam::720528183931:role/Proj-vht-assume-role
+          aws-region: ${{ matrix.region }}
 
       - name: AWS STS
-        run: | 
-          aws sts assume-role --role-arn arn:aws:iam::720528183931:role/Proj-vht-assume-role --region eu-west-1 --role-session-name GitHubTest
+        run: |
+          env
+          aws sts assume-role-with-web-identity --role-arn arn:aws:iam::720528183931:role/Proj-vht-assume-role --region eu-west-1 --role-session-name GitHubTest --web-identity-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN
           aws sts get-caller-identity
-        
+
       - name: Run tests
         id: avh
         env:
