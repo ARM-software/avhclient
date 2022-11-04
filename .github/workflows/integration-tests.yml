@@ -54,6 +54,9 @@ jobs:
           role-to-assume: arn:aws:iam::720528183931:role/Proj-vht-assume-role
           aws-region: ${{ matrix.region }}
 
+      - name: AWS STS
+        run: aws sts get-caller-identity
+        
       - name: Run tests
         id: avh
         env:
