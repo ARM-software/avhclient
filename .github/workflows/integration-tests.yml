@@ -49,7 +49,7 @@ jobs:
         run: pip install .
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@master
         with:
           role-to-assume: arn:aws:iam::720528183931:role/Proj-vht-assume-role
           aws-region: ${{ matrix.region }}
