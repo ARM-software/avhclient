@@ -55,7 +55,9 @@ jobs:
           aws-region: ${{ matrix.region }}
 
       - name: AWS STS
-        run: aws sts get-caller-identity
+        run: | 
+          aws sts get-caller-identity --region eu-west-1
+          env
         
       - name: Run tests
         id: avh
