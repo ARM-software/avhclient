@@ -48,16 +48,16 @@ jobs:
       - name: Install AVH Client
         run: pip install .
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@master
-        with:
-          role-to-assume: arn:aws:iam::720528183931:role/Proj-vht-assume-role
-          aws-region: ${{ matrix.region }}
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@master
+#         with:
+#           role-to-assume: arn:aws:iam::720528183931:role/Proj-vht-assume-role
+#           aws-region: ${{ matrix.region }}
 
       - name: AWS STS
         run: | 
-          aws sts get-caller-identity --region eu-west-1
-          env
+          aws sts assume-role --role-arn arn:aws:iam::720528183931:role/Proj-vht-assume-role --region eu-west-1 --role-session-name GitHubTest
+          aws sts get-caller-identity
         
       - name: Run tests
         id: avh
