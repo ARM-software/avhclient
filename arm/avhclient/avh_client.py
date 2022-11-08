@@ -18,7 +18,6 @@ import yaml
 from .avh_backend import AvhBackend, AvhBackendState
 from .helper import create_archive
 
-
 class AvhSpec:
     """Wrapper for AVH spec file."""
 
