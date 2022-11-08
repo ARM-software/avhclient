@@ -1,0 +1,21 @@
+name: Caller Integration Tests
+on:
+  pull_request:
+    paths:
+      - '**/*.py'
+      - pyproject.toml
+      - '!tests/**'
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Save PR number
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          mkdir -p ./pr
+          echo -n $PR_NUMBER > ./pr/pr_number
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pr_number
+          path: pr/
