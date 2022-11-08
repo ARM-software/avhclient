@@ -1,3 +1,8 @@
+# This workflow is triggered whenever "Caller Integration Test" workflow is completed (which is called by PR).
+# This workflow ideally should be triggered also by PR, but forked PR has limited permissions which does not
+# allow to use `configure-aws-credentials` actions and using secrets.
+# It will update its status back to the caller PR as "Integration Test" check name
+
 name: Integration Tests
 on:
   workflow_run:
@@ -6,8 +11,28 @@ on:
     types:
       - completed
 jobs:
+  set_pending_status_to_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set a pending status to the PR
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          curl --request POST \
+            --url https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.workflow_run.head_commit.id }} \
+            --header "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            --header 'content-type: application/json' \
+            --data '{
+              "state": "pending",
+              "context": "Integration Test",
+              "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id	}}"
+              }' \
+            --fail
+
   test_matrix:
+    needs: set_pending_status_to_pr
     strategy:
+      fail-fast: false
       matrix:
         region: [ eu-west-1, us-east-1 ]
         include:
@@ -83,3 +108,43 @@ jobs:
           AWS_IAM_PROFILE: ${{ secrets.AWS_IAM_PROFILE }}
         run: |
           avhclient -b aws execute --specfile AVH-GetStarted/basic/avh.yml
+
+  set_success_status_to_pr:
+    runs-on: ubuntu-latest
+    needs: test_matrix
+    if: ${{ success() }}
+    steps:
+      - name: Set success status to the PR
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          curl --request POST \
+            --url https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.workflow_run.head_commit.id }} \
+            --header "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            --header 'content-type: application/json' \
+            --data '{
+              "state": "success",
+              "context": "Integration Test",
+              "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id	}}"
+              }' \
+            --fail
+
+  set_failure_status_to_pr:
+    runs-on: ubuntu-latest
+    needs: test_matrix
+    if: ${{ failure() }}
+    steps:
+      - name: Set failure status to the PR
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          curl --request POST \
+            --url https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.workflow_run.head_commit.id }} \
+            --header "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            --header 'content-type: application/json' \
+            --data '{
+              "state": "failure",
+              "context": "Integration Test",
+              "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id	}}"
+              }' \
+            --fail

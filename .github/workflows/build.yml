@@ -4,6 +4,7 @@ on:
     branches: [ main ]
   pull_request:
     paths:
+      - '.github/workflows/build.yml'
       - '**/*.py'
       - pyproject.toml
 env:
