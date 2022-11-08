@@ -55,9 +55,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           name: Integration Test
-          conclusion: ${{ job.status }}
+          conclusion: in_progress
           output: |
-            {"summary":${{ steps.test.outputs.summary }}}
+            {"summary":"in_progress"}
 
       - name: Checkout AVH-GetStarted example
         uses: actions/checkout@v3
