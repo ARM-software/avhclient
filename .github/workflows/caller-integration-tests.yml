@@ -2,6 +2,7 @@ name: Caller Integration Tests
 on:
   pull_request:
     paths:
+      - '.github/workflows/caller-integration-tests.yml'
       - '**/*.py'
       - pyproject.toml
       - '!tests/**'
