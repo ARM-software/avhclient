@@ -1,5 +1,5 @@
-DEPRECATED
-==========
+DEPRECATED - DO NOT USE
+=======================
 
 Use the `Foundation Components for MLOps Systems <https://github.com/ARM-software/AVH-MLOps/tree/main>`_ or `Arm-Examples/AVH_CI_Template <https://github.com/Arm-Examples/AVH_CI_Template>`_ instead.
 
