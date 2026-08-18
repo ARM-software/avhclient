@@ -71,7 +71,26 @@ class LocalBackend(AvhBackend):
     def upload_workspace(self, filename: Union[str, Path]):
         logging.info("Extracting workspace into %s", self.workdir)
         with tarfile.open(filename, mode='r:bz2') as archive:
-            archive.extractall(path=self.workdir)
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(archive, path=self.workdir)
 
     def run_commands(self, cmds: List[str]):
         shfile = NamedTemporaryFile(prefix="script-", suffix=".sh", dir=self.workdir, delete=False)
